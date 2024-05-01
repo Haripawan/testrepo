@@ -167,3 +167,53 @@ print(json.dumps(lineage_json, indent=4))
 ```
 
 This code will output the lineage information extracted from the Oracle SQL query as a JSON object. The JSON object will have two keys: "tables" containing a list of tables involved and "columns" containing a list of columns selected in the query. You can further extend this code to include additional information or structure the JSON output according to your requirements.
+
+
+######version5 ######
+
+from graphviz import Digraph
+from sqlglot import parse_one
+from sqlglot.expressions import Column
+
+def extract_lineage_with_table(sql):
+    # Parse the SQL query into an expression tree
+    expression = parse_one(sql)
+
+    # Traverse the expression tree to extract lineage information
+    lineage_info = []
+    for exp in expression.find_all(Column):
+        # Include the table name with the column name
+        full_column_name = f"{exp.table}.{exp.name}" if exp.table else exp.name
+        lineage_info.append({
+            'column': full_column_name,
+            'lineage': [
+                f"{ancestor.table}.{ancestor.name}" if ancestor.table else ancestor.name
+                for ancestor in exp.find_ancestors(Column)
+            ]
+        })
+
+    return lineage_info
+
+def visualize_lineage(lineage_info):
+    dot = Digraph(comment='Column Lineage')
+
+    for line in lineage_info:
+        # Create nodes for the column
+        dot.node(line['column'], line['column'])
+
+        # Create edges from source columns to the target column
+        for ancestor in line['lineage']:
+            dot.edge(ancestor, line['column'])
+
+    return dot
+
+# Example usage with a complex SQL query
+complex_sql = "SELECT a.col1, b.col2 FROM table_a a JOIN table_b b ON a.id = b.id"
+lineage = extract_lineage_with_table(complex_sql)
+
+# Generate the visualization
+dot = visualize_lineage(lineage)
+
+# Render the visualization to a file (e.g., PDF, PNG)
+dot.render('lineage_graph', view=True)
+
