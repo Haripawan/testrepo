@@ -40,3 +40,32 @@ for line in lineage:
     print(f"Column: {line['column']}")
     print(f"Lineage: {', '.join(line['lineage'])}")
     print()
+
+##############
+
+from sqlglot import parse_one
+from sqlglot.expressions import Column
+
+def extract_lineage(sql):
+    # Parse the SQL query into an expression tree
+    expression = parse_one(sql)
+
+    # Traverse the expression tree to extract lineage information
+    lineage_info = []
+    for exp in expression.find_all(Column):
+        lineage_info.append({
+            'column': exp.sql(),
+            'lineage': [parent.sql() for parent in exp.find_ancestors(Column)]
+        })
+
+    return lineage_info
+
+# Example usage with a complex SQL query
+complex_sql = "SELECT a.col1, b.col2 FROM table_a a JOIN table_b b ON a.id = b.id"
+lineage = extract_lineage(complex_sql)
+
+# Output the lineage information
+for line in lineage:
+    print(f"Column: {line['column']}")
+    print(f"Lineage: {', '.join(line['lineage'])}")
+
