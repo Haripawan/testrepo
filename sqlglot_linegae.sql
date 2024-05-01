@@ -269,3 +269,52 @@ for line in lineage:
     print(f"Column: {line['column']}")
     print(f"Lineage: {', '.join(line['lineage'])}")
 
+##### version 7####
+
+from sqlglot import parse_one
+from sqlglot.expressions import Alias, Column
+
+def extract_lineage_with_table_aliases(sql):
+    # Parse the SQL query into an expression tree
+    expression = parse_one(sql)
+
+    # Create a mapping of aliases to actual table names
+    alias_to_table = {
+        alias.alias: alias.this.name
+        for alias in expression.find_all(Alias)
+    }
+
+    # Traverse the expression tree to extract lineage information
+    lineage_info = []
+    for exp in expression.find_all(Column):
+        # If the column has an alias and no table, use the alias as the table name
+        table_name = alias_to_table.get(exp.table, exp.alias or exp.table)
+        full_column_name = f"{table_name}.{exp.name}" if table_name else exp.name
+
+        # Find the source columns for the current column
+        source_columns = [
+            f"{alias_to_table.get(parent.table, parent.alias or parent.table)}.{parent.name}"
+            if parent.table or parent.alias else parent.name
+            for parent in exp.find_ancestors(Column)
+        ] if exp.find_ancestors(Column) else []
+
+        lineage_info.append({
+            'column': full_column_name,
+            'lineage': source_columns
+        })
+
+    return lineage_info
+
+# Example usage with a complex SQL query
+complex_sql = """
+SELECT a.col1, SUM(b.amount) AS total_amount
+FROM table_a AS a
+JOIN table_b AS b ON a.id = b.id
+GROUP BY a.col1
+"""
+lineage = extract_lineage_with_table_aliases(complex_sql)
+
+# Output the lineage information
+for line in lineage:
+    print(f"Column: {line['column']}")
+    print(f"Lineage: {', '.join(line['lineage'])}")
