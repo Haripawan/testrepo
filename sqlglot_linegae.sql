@@ -217,3 +217,55 @@ dot = visualize_lineage(lineage)
 # Render the visualization to a file (e.g., PDF, PNG)
 dot.render('lineage_graph', view=True)
 
+
+
+### version 6####
+
+from sqlglot import parse_one
+from sqlglot.expressions import Column, Table
+
+def extract_lineage_with_actual_table_names(sql):
+    # Parse the SQL query into an expression tree
+    expression = parse_one(sql)
+
+    # Create a mapping of aliases to actual table names
+    alias_to_table = {
+        alias.alias: alias.this
+        for alias in expression.find_all(Table)
+        if alias.alias
+    }
+
+    # Traverse the expression tree to extract lineage information
+    lineage_info = []
+    for exp in expression.find_all(Column):
+        # Replace alias with actual table name if it exists
+        table_name = alias_to_table.get(exp.table, exp.table)
+        full_column_name = f"{table_name}.{exp.name}" if table_name else exp.name
+
+        # Find the source columns for the current column
+        source_columns = [
+            f"{alias_to_table.get(parent.table, parent.table)}.{parent.name}"
+            if parent.table else parent.name
+            for parent in exp.find_ancestors(Column)
+        ] if exp.find_ancestors(Column) else []
+
+        lineage_info.append({
+            'column': full_column_name,
+            'lineage': source_columns
+        })
+
+    return lineage_info
+
+# Example usage with a complex SQL query
+complex_sql = """
+SELECT a.col1, b.col2
+FROM table_a AS a
+JOIN table_b AS b ON a.id = b.id
+"""
+lineage = extract_lineage_with_actual_table_names(complex_sql)
+
+# Output the lineage information
+for line in lineage:
+    print(f"Column: {line['column']}")
+    print(f"Lineage: {', '.join(line['lineage'])}")
+
