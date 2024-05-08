@@ -318,3 +318,47 @@ lineage = extract_lineage_with_table_aliases(complex_sql)
 for line in lineage:
     print(f"Column: {line['column']}")
     print(f"Lineage: {', '.join(line['lineage'])}")
+
+
+####version 8####
+
+from sqlglot import parse
+
+def extract_data_lineage(sql_query):
+    parsed_query = parse(sql_query)
+    lineage = []
+
+    for node in parsed_query:
+        if node['type'] == 'select':
+            # Extract columns from the SELECT statement
+            for item in node['value']:
+                if item['type'] == 'column':
+                    lineage.append(('source', item['name']))
+        elif node['type'] == 'join':
+            # Extract columns involved in JOIN conditions
+            for condition in node['on']:
+                if condition['type'] == 'condition':
+                    if condition['left']['type'] == 'column':
+                        lineage.append(('source', condition['left']['name']))
+                    if condition['right']['type'] == 'column':
+                        lineage.append(('source', condition['right']['name']))
+        elif node['type'] == 'from':
+            # Extract tables and columns from the FROM clause
+            for item in node['value']:
+                if item['type'] == 'table':
+                    lineage.append(('destination', item['name']))
+                elif item['type'] == 'column':
+                    lineage.append(('destination', item['name']))
+
+    return lineage
+
+# Sample SQL query
+sql_query = """
+SELECT a.column1, b.column2
+FROM table_a a
+JOIN table_b b ON a.id = b.id
+"""
+
+# Extract data lineage
+data_lineage = extract_data_lineage(sql_query)
+print(data_lineage)
