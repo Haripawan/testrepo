@@ -1,4 +1,4 @@
-import tensorflow as tf
+oimport tensorflow as tf
 from transformers import TFBertTokenizer, TFBertForQuestionAnswering
 
 # Load pre-trained BERT model and tokenizer
@@ -6,7 +6,7 @@ tokenizer = TFBertTokenizer.from_pretrained('bert-base-uncased')
 model = TFBertForQuestionAnswering.from_pretrained('bert-base-uncased')
 
 # Define your context and question
-context = "This is a sample sentence to demonstrate context extraction using BERT."
+context = "This is a sample sentence to demonstrate context extraction usig BERT."
 question = "What is the context about?"
 
 # Tokenize the inputs
@@ -78,3 +78,36 @@ docs = [
 processed_docs = [preprocess_document(doc) for doc in docs]
 
 print(processed_docs)
+
+
+
+##### preprocessy######
+
+
+import spacy
+
+# Load the spaCy model
+nlp = spacy.load('en_core_web_sm')
+
+# Function to preprocess documents
+def preprocess_docs(doc):
+    # Parse the document with spaCy
+    parsed_doc = nlp(doc)
+    
+    # Tokenize and process the text
+    tokens = [token.lemma_.lower() for token in parsed_doc if not token.is_stop and not token.is_punct and not token.is_space]
+    
+    return tokens
+
+# Example list of documents
+docs = [
+    "Cats are playing in the garden.",
+    "A man is walking his dog in the park.",
+    "The new movie is a thrilling adventure."
+]
+
+# Preprocess each document
+processed_docs = [preprocess_docs(doc) for doc in docs]
+
+print(processed_docs)
+
