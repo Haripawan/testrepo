@@ -24,3 +24,57 @@ predicted_end = tf.argmax(end_logits, axis=-1).numpy()[0]
 answer = context[predicted_start:predicted_end+1]
 
 print("Answer:", answer)
+
+
+
+####processing docs######
+
+
+
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import string
+
+# Download necessary NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Initialize the lemmatizer and stop words
+lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
+
+def preprocess_document(doc):
+    # Tokenize the document
+    tokens = nltk.word_tokenize(doc)
+    
+    # Convert to lower case
+    tokens = [word.lower() for word in tokens]
+    
+    # Remove punctuation from each word
+    table = str.maketrans('', '', string.punctuation)
+    stripped = [word.translate(table) for word in tokens]
+    
+    # Remove remaining tokens that are not alphabetic
+    words = [word for word in stripped if word.isalpha()]
+    
+    # Filter out stop words
+    words = [word for word in words if not word in stop_words]
+    
+    # Lemmatize words
+    lemmatized = [lemmatizer.lemmatize(word) for word in words]
+    
+    return lemmatized
+
+# Example document (list of strings)
+docs = [
+    "Cats are playing in the garden",
+    "A man is walking his dog in the park",
+    "The new movie is a thrilling adventure"
+]
+
+# Preprocess each document
+processed_docs = [preprocess_document(doc) for doc in docs]
+
+print(processed_docs)
