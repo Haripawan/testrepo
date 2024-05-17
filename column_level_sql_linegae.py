@@ -17,11 +17,17 @@ parsed = sqlglot.parse_one(sql)
 
 # Extract columns
 def extract_columns(parsed_query):
-    return [col.sql() for col in parsed_query.find_all(sqlglot.expressions.Column)]
+    return [col for col in parsed_query.find_all(sqlglot.expressions.Column)]
 
 # Extract column transformations
 def extract_transformations(parsed_query):
-    return {alias.alias.sql(): alias.this.sql() for alias in parsed_query.find_all(sqlglot.expressions.Alias)}
+    transformations = {}
+    for alias in parsed_query.find_all(sqlglot.expressions.Alias):
+        if isinstance(alias.this, sqlglot.expressions.Func):
+            transformations[alias.alias] = alias.this.sql()
+        else:
+            transformations[alias.alias] = str(alias.this)
+    return transformations
 
 # Extract tables
 def extract_tables(parsed_query):
@@ -42,7 +48,7 @@ def extract_dependencies(parsed_query):
             else:
                 dependencies[column] = key
         elif isinstance(expression, sqlglot.expressions.Alias):
-            populate_dependencies(expression.this, alias=expression.alias.sql())
+            populate_dependencies(expression.this, alias=str(expression.alias))
     
     for expr in parsed_query.find_all((sqlglot.expressions.Column, sqlglot.expressions.Alias)):
         populate_dependencies(expr)
@@ -59,10 +65,10 @@ dependencies = extract_dependencies(parsed)
 data = []
 
 for col in columns:
-    col_name = col.split('.')[-1]
-    table_name = col.split('.')[0] if '.' in col else None
+    col_name = col.name
+    table_name = col.table
     transformation = transformations.get(col_name, None)
-    dependency = dependencies.get(col_name, col)
+    dependency = dependencies.get(col_name, f"{table_name}.{col_name}" if table_name else col_name)
     
     data.append({
         "Column": col_name,
