@@ -93,7 +93,6 @@ print(df)
 
 
 ##### including the aggregate functions ###
-
 import sqlglot
 import pandas as pd
 
@@ -111,7 +110,7 @@ ORDER BY total_amount DESC;
 # Parse the SQL query
 parsed = sqlglot.parse_one(sql)
 
-# Extract columns
+# Extract columns and aliases
 def extract_columns(parsed_query):
     columns = []
     for col in parsed_query.find_all(sqlglot.expressions.Column):
@@ -124,10 +123,7 @@ def extract_columns(parsed_query):
 def extract_transformations(parsed_query):
     transformations = {}
     for alias in parsed_query.find_all(sqlglot.expressions.Alias):
-        if isinstance(alias.this, (sqlglot.expressions.Func, sqlglot.expressions.Aggregate)):
-            transformations[alias.alias] = alias.this.sql()
-        else:
-            transformations[alias.alias] = str(alias.this)
+        transformations[str(alias.alias)] = alias.this.sql()
     return transformations
 
 # Extract table aliases and their actual names
@@ -135,9 +131,9 @@ def extract_table_aliases(parsed_query):
     table_aliases = {}
     for table in parsed_query.find_all(sqlglot.expressions.Table):
         if table.alias:
-            table_aliases[table.alias] = table.this
+            table_aliases[str(table.alias)] = str(table.this)
         else:
-            table_aliases[str(table.this)] = table.this
+            table_aliases[str(table.this)] = str(table.this)
     return table_aliases
 
 # Extract column dependencies
