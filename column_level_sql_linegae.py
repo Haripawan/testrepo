@@ -17,18 +17,15 @@ parsed = sqlglot.parse_one(sql)
 
 # Extract columns
 def extract_columns(parsed_query):
-    columns = [str(col) for col in parsed_query.find_all(sqlglot.expressions.Column)]
-    return columns
+    return [col.sql() for col in parsed_query.find_all(sqlglot.expressions.Column)]
 
 # Extract column transformations
 def extract_transformations(parsed_query):
-    transformations = {str(alias.alias): str(alias.this) for alias in parsed_query.find_all(sqlglot.expressions.Alias)}
-    return transformations
+    return {alias.alias.sql(): alias.this.sql() for alias in parsed_query.find_all(sqlglot.expressions.Alias)}
 
 # Extract tables
 def extract_tables(parsed_query):
-    tables = [str(table) for table in parsed_query.find_all(sqlglot.expressions.Table)]
-    return tables
+    return [table.sql() for table in parsed_query.find_all(sqlglot.expressions.Table)]
 
 # Extract column dependencies
 def extract_dependencies(parsed_query):
@@ -45,7 +42,7 @@ def extract_dependencies(parsed_query):
             else:
                 dependencies[column] = key
         elif isinstance(expression, sqlglot.expressions.Alias):
-            populate_dependencies(expression.this, alias=str(expression.alias))
+            populate_dependencies(expression.this, alias=expression.alias.sql())
     
     for expr in parsed_query.find_all((sqlglot.expressions.Column, sqlglot.expressions.Alias)):
         populate_dependencies(expr)
