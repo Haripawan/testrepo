@@ -29,9 +29,15 @@ def extract_transformations(parsed_query):
             transformations[alias.alias] = str(alias.this)
     return transformations
 
-# Extract tables
-def extract_tables(parsed_query):
-    return [table.sql() for table in parsed_query.find_all(sqlglot.expressions.Table)]
+# Extract table aliases and their actual names
+def extract_table_aliases(parsed_query):
+    table_aliases = {}
+    for table in parsed_query.find_all(sqlglot.expressions.Table):
+        if table.alias:
+            table_aliases[table.alias] = table.this
+        else:
+            table_aliases[str(table.this)] = table.this
+    return table_aliases
 
 # Extract column dependencies
 def extract_dependencies(parsed_query):
@@ -58,7 +64,7 @@ def extract_dependencies(parsed_query):
 # Extract information
 columns = extract_columns(parsed)
 transformations = extract_transformations(parsed)
-tables = extract_tables(parsed)
+table_aliases = extract_table_aliases(parsed)
 dependencies = extract_dependencies(parsed)
 
 # Prepare DataFrame data
@@ -66,7 +72,8 @@ data = []
 
 for col in columns:
     col_name = col.name
-    table_name = col.table
+    table_alias = col.table
+    table_name = table_aliases.get(table_alias, table_alias)
     transformation = transformations.get(col_name, None)
     dependency = dependencies.get(col_name, f"{table_name}.{col_name}" if table_name else col_name)
     
