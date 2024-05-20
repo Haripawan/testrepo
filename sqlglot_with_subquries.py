@@ -18,74 +18,59 @@ ORDER BY subquery.total_amount DESC;
 # Parse the SQL query
 parsed = sqlglot.parse_one(sql)
 
-# Extract columns and aliases, handling subqueries
-def extract_columns(parsed_query):
+def extract_elements(parsed_query):
     columns = []
-    for col in parsed_query.find_all(sqlglot.expressions.Column):
-        columns.append(col)
-    for alias in parsed_query.find_all(sqlglot.expressions.Alias):
-        columns.append(alias)
-    for subquery in parsed_query.find_all(sqlglot.expressions.Subquery):
-        columns.extend(extract_columns(subquery))
-    return columns
-
-# Extract column transformations, handling subqueries
-def extract_transformations(parsed_query):
     transformations = {}
-    for alias in parsed_query.find_all(sqlglot.expressions.Alias):
-        transformations[str(alias.alias)] = alias.this.sql()
-    for subquery in parsed_query.find_all(sqlglot.expressions.Subquery):
-        transformations.update(extract_transformations(subquery))
-    return transformations
-
-# Extract table aliases and their actual names, handling subqueries
-def extract_table_aliases(parsed_query):
     table_aliases = {}
-    for table in parsed_query.find_all(sqlglot.expressions.Table):
-        if table.alias:
-            table_aliases[str(table.alias)] = str(table.this)
-        else:
-            table_aliases[str(table.this)] = str(table.this)
-    for subquery in parsed_query.find_all(sqlglot.expressions.Subquery):
-        table_aliases.update(extract_table_aliases(subquery))
-    return table_aliases
-
-# Extract column dependencies, including transformations, handling subqueries
-def extract_dependencies(parsed_query):
     dependencies = {}
+
+    queue = [parsed_query]
     
-    def populate_dependencies(expression, alias=None):
-        if isinstance(expression, sqlglot.expressions.Column):
-            table = expression.table
-            column = expression.name
-            key = f"{table}.{column}" if table else column
-            if alias:
-                if alias not in dependencies:
-                    dependencies[alias] = []
-                dependencies[alias].append(key)
+    while queue:
+        current = queue.pop(0)
+        
+        for col in current.find_all(sqlglot.expressions.Column):
+            columns.append(col)
+        
+        for alias in current.find_all(sqlglot.expressions.Alias):
+            columns.append(alias)
+            transformations[str(alias.alias)] = alias.this.sql()
+        
+        for table in current.find_all(sqlglot.expressions.Table):
+            if table.alias:
+                table_aliases[str(table.alias)] = str(table.this)
             else:
-                if column not in dependencies:
-                    dependencies[column] = []
-                dependencies[column].append(key)
-        elif isinstance(expression, sqlglot.expressions.Alias):
-            populate_dependencies(expression.this, alias=str(expression.alias))
-        elif isinstance(expression, sqlglot.expressions.Func):
-            for arg in expression.args.values():
-                populate_dependencies(arg, alias)
-        elif isinstance(expression, sqlglot.expressions.Subquery):
-            for sub_expr in expression.find_all((sqlglot.expressions.Column, sqlglot.expressions.Alias, sqlglot.expressions.Func)):
-                populate_dependencies(sub_expr, alias)
+                table_aliases[str(table.this)] = str(table.this)
+        
+        for subquery in current.find_all(sqlglot.expressions.Subquery):
+            queue.append(subquery)
+        
+        def populate_dependencies(expression, alias=None):
+            if isinstance(expression, sqlglot.expressions.Column):
+                table = expression.table
+                column = expression.name
+                key = f"{table}.{column}" if table else column
+                if alias:
+                    if alias not in dependencies:
+                        dependencies[alias] = []
+                    dependencies[alias].append(key)
+                else:
+                    if column not in dependencies:
+                        dependencies[column] = []
+                    dependencies[column].append(key)
+            elif isinstance(expression, sqlglot.expressions.Alias):
+                populate_dependencies(expression.this, alias=str(expression.alias))
+            elif isinstance(expression, sqlglot.expressions.Func):
+                for arg in expression.args.values():
+                    populate_dependencies(arg, alias)
 
-    for expr in parsed_query.find_all((sqlglot.expressions.Column, sqlglot.expressions.Alias, sqlglot.expressions.Func, sqlglot.expressions.Subquery)):
-        populate_dependencies(expr)
-
-    return dependencies
+        for expr in current.find_all((sqlglot.expressions.Column, sqlglot.expressions.Alias, sqlglot.expressions.Func)):
+            populate_dependencies(expr)
+    
+    return columns, transformations, table_aliases, dependencies
 
 # Extract information
-columns = extract_columns(parsed)
-transformations = extract_transformations(parsed)
-table_aliases = extract_table_aliases(parsed)
-dependencies = extract_dependencies(parsed)
+columns, transformations, table_aliases, dependencies = extract_elements(parsed)
 
 # Prepare DataFrame data
 data = []
