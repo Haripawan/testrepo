@@ -322,6 +322,7 @@ df = pd.DataFrame(data)
 print(df)
 
 ######## join and filters #######
+
 import sqlglot
 import pandas as pd
 
@@ -446,11 +447,18 @@ for col in columns:
 join_data = []
 
 for join in joins:
+    if hasattr(join, 'on_this'):
+        on_condition = join.on_this.sql()
+    else:
+        on_condition = None
+
+    left_table = table_aliases.get(str(join.left), None)
+    right_table = table_aliases.get(str(join.right), None)
     join_data.append({
         "Join_Type": join.kind.upper(),
-        "Left_Table": table_aliases.get(str(join.left.this), None),
-        "Right_Table": table_aliases.get(str(join.right.this), None),
-        "On_Condition": join.on_this.sql()
+        "Left_Table": left_table,
+        "Right_Table": right_table,
+        "On_Condition": on_condition
     })
 
 # Prepare DataFrame for filters
@@ -474,6 +482,5 @@ print(join_df)
 print("\nFilters Information:")
 print(filter_df)
 
-
-
-
+    
+# 
