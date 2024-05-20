@@ -24,10 +24,10 @@ def extract_elements(parsed_query):
     table_aliases = {}
     dependencies = {}
 
-    queue = [parsed_query]
+    stack = [parsed_query]
     
-    while queue:
-        current = queue.pop(0)
+    while stack:
+        current = stack.pop()
         
         for col in current.find_all(sqlglot.expressions.Column):
             columns.append(col)
@@ -43,7 +43,7 @@ def extract_elements(parsed_query):
                 table_aliases[str(table.this)] = str(table.this)
         
         for subquery in current.find_all(sqlglot.expressions.Subquery):
-            queue.append(subquery)
+            stack.append(subquery)
         
         def populate_dependencies(expression, alias=None):
             if isinstance(expression, sqlglot.expressions.Column):
