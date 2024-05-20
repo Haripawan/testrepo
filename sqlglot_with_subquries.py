@@ -738,11 +738,12 @@ def extract_elements(parsed_query):
         
         # Extract joins
         for join in current.find_all(sqlglot.expressions.Join):
+            join_type = join.args.get("kind", None)
             left_table = join.args.get("this", None)
             right_table = join.args.get("expression", None)
             on_condition = join.args.get("on", None)
             joins.append({
-                "Join_Type": join.kind.upper(),
+                "Join_Type": join_type.sql().upper() if join_type else None,
                 "Left_Table": left_table.sql() if left_table else None,
                 "Right_Table": right_table.sql() if right_table else None,
                 "On_Condition": on_condition.sql() if on_condition else None
