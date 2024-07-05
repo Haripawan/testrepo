@@ -83,3 +83,34 @@ parsed_sql = parse_sql(sql_script)
 table_references = extract_table_column_references(parsed_sql)
 lineage_graph = build_lineage_graph(table_references)
 visualize_graph(lineage_graph)
+
+
+***************
+
+import sqlparse
+
+def extract_column_lineage(sql_query):
+    parsed = sqlparse.parse(sql_query)
+    statement = parsed[0]
+
+    column_lineage = {}
+    for token in statement.tokens:
+        if token.ttype is None and token.is_group:
+            for sub_token in token.tokens:
+                if sub_token.ttype is None and sub_token.is_group:
+                    for sub_sub_token in sub_token.tokens:
+                        if sub_sub_token.ttype is None and sub_sub_token.is_group:
+                            columns = [t.value for t in sub_sub_token.tokens if t.ttype is None]
+                            if columns:
+                                column_lineage['output'] = columns
+                        elif sub_sub_token.ttype is None:
+                            columns = [t.value for t in sub_sub_token.tokens if t.ttype is None]
+                            if columns:
+                                column_lineage['input'] = columns
+
+    return column_lineage
+
+sql_query = "SELECT a.col1, b.col2 FROM table1 a JOIN table2 b ON a.id = b.id"
+lineage = extract_column_lineage(sql_query)
+print(lineage)
+
