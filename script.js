@@ -1,9 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Example data for a table
-    const tableData = {
-        tableName: 'Users',
-        columns: ['id', 'name', 'email', 'created_at', 'updated_at']
-    };
+    // Example data for tables
+    const tablesData = [
+        {
+            tableName: 'raw_product_data',
+            database: 'PostgreSQL',
+            columns: ['created_at', 'product_id', 'product_name', 'product_description', 'product_category', 'product_brand', 'product_price', 'product_inventory', 'product_weight'],
+            popularity: 'Low'
+        },
+        {
+            tableName: 'stg_product',
+            database: 'Snowflake',
+            columns: ['id', 'name', 'price', 'created_at', 'updated_at', 'category', 'price', 'cost', 'inventory', 'weight', 'isbn'],
+            popularity: 'Medium'
+        },
+        // Add more tables as needed
+    ];
 
     // Function to create a lineage node
     function createLineageNode(tableData) {
@@ -14,7 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create the node title
         const title = document.createElement('div');
         title.className = 'node-title';
-        title.textContent = tableData.tableName;
+        title.innerHTML = `
+            ${tableData.tableName}
+            <span>${tableData.database}</span>
+            <span class="icon">&#9662;</span>
+        `;
         node.appendChild(title);
 
         // Create the list of columns
@@ -22,7 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
         columnsList.className = 'node-columns';
         tableData.columns.forEach(column => {
             const listItem = document.createElement('li');
-            listItem.textContent = column;
+            listItem.innerHTML = `
+                <span>${column}</span>
+                <span class="icon">&#9679;</span>
+            `;
             columnsList.appendChild(listItem);
         });
         node.appendChild(columnsList);
@@ -31,8 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
         title.addEventListener('click', () => {
             if (columnsList.style.display === 'none' || columnsList.style.display === '') {
                 columnsList.style.display = 'block';
+                title.querySelector('.icon').innerHTML = '&#9652;'; // Up arrow
             } else {
                 columnsList.style.display = 'none';
+                title.querySelector('.icon').innerHTML = '&#9662;'; // Down arrow
             }
         });
 
@@ -42,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get the container for lineage nodes
     const lineageContainer = document.getElementById('lineage-container');
 
-    // Create a lineage node and add it to the container
-    const lineageNode = createLineageNode(tableData);
-    lineageContainer.appendChild(lineageNode);
+    // Create and add lineage nodes to the container
+    tablesData.forEach(tableData => {
+        const lineageNode = createLineageNode(tableData);
+        lineageContainer.appendChild(lineageNode);
+    });
 });
