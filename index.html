@@ -7,16 +7,22 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
         }
         .node {
             border: 1px solid #ccc;
             border-radius: 8px;
             margin: 10px;
-            display: inline-block;
             width: 200px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            position: relative;
+            position: absolute;
+            cursor: move;
         }
         .node-title {
             background-color: #f4a460; /* Light brown background */
