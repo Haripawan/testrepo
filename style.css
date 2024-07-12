@@ -21,18 +21,20 @@ body {
 #lineage-container {
     position: relative;
     z-index: 1;
-    width: 100%;
-    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .node {
-    position: absolute;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
     cursor: move;
     width: 200px;
+    margin: 10px;
+    position: relative;
 }
 
 .node-title {
@@ -43,7 +45,6 @@ body {
 }
 
 .node-columns {
-    display: none;
     list-style-type: none;
     padding: 10px;
     background-color: #e6f7ff;
