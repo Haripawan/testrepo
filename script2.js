@@ -1,111 +1,146 @@
-// Sample data
-const data = {
-    nodes: [
-        { id: 1, title: "Node 1", columns: ["Column 1", "Column 2", "Column 3"] },
-        { id: 2, title: "Node 2", columns: ["Column 1", "Column 2", "Column 3"] },
-        { id: 3, title: "Node 3", columns: ["Column 1", "Column 2", "Column 3"] },
-    ],
-    links: [
-        { source: { node: 1, column: "Column 1" }, target: { node: 2, column: "Column 1" } },
-        { source: { node: 2, column: "Column 2" }, target: { node: 3, column: "Column 2" } },
-    ]
-};
-
-// Function to create nodes
-function createNodes(container, nodes) {
-    nodes.forEach((node, index) => {
-        const nodeEl = document.createElement('div');
-        nodeEl.className = 'node';
-        nodeEl.style.left = `${index * 240}px`; // Adjust horizontal spacing as needed
-        nodeEl.style.top = `50%`;
-        nodeEl.style.transform = `translateY(-50%)`;
-
-        const titleEl = document.createElement('div');
-        titleEl.className = 'node-title';
-        titleEl.innerText = node.title;
-        titleEl.addEventListener('click', () => {
-            columnsEl.style.display = columnsEl.style.display === 'none' ? 'block' : 'none';
-            drawLinks();
-        });
-
-        const columnsEl = document.createElement('ul');
-        columnsEl.className = 'node-columns';
-        node.columns.forEach(col => {
-            const colEl = document.createElement('li');
-            colEl.innerText = col;
-            columnsEl.appendChild(colEl);
-        });
-
-        nodeEl.appendChild(titleEl);
-        nodeEl.appendChild(columnsEl);
-        container.appendChild(nodeEl);
-        
-        // Make the node draggable
-        nodeEl.draggable = true;
-        nodeEl.ondragstart = dragStart;
-        nodeEl.ondragend = dragEnd;
-        
-        node.element = nodeEl; // Store the element reference
-    });
-}
-
-// Drag and Drop Functions
-let currentDragNode = null;
-
-function dragStart(event) {
-    currentDragNode = event.target;
-    event.dataTransfer.setData('text/plain', '');
-}
-
-function dragEnd(event) {
-    currentDragNode.style.left = `${event.clientX - currentDragNode.offsetWidth / 2}px`;
-    currentDragNode.style.top = `${event.clientY - currentDragNode.offsetHeight / 2}px`;
-    currentDragNode = null;
-    drawLinks();
-}
-
-// Create SVG links between nodes
-function drawLinks() {
-    const svg = d3.select("#svgContainer");
-    svg.selectAll("*").remove(); // Clear previous links
-
-    const lineGenerator = d3.line()
-        .x(d => d.x)
-        .y(d => d.y)
-        .curve(d3.curveBasis);
-
-    data.links.forEach(link => {
-        const sourceNode = data.nodes.find(n => n.id === link.source.node);
-        const targetNode = data.nodes.find(n => n.id === link.target.node);
-
-        const sourceElement = Array.from(sourceNode.element.querySelectorAll('.node-columns li'))
-            .find(el => el.innerText === link.source.column);
-        const targetElement = Array.from(targetNode.element.querySelectorAll('.node-columns li'))
-            .find(el => el.innerText === link.target.column);
-
-        const sourcePos = getElementCenter(sourceElement);
-        const targetPos = getElementCenter(targetElement);
-
-        const pathData = lineGenerator([sourcePos, targetPos]);
-
-        svg.append("path")
-            .attr("d", pathData)
-            .attr("stroke", "black")
-            .attr("fill", "none");
-    });
-}
-
-function getElementCenter(element) {
-    const rect = element.getBoundingClientRect();
-    return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
+document.addEventListener('DOMContentLoaded', () => {
+    const data = {
+        tables: [
+            {
+                tableName: 'raw_product_data',
+                database: 'PostgreSQL',
+                columns: ['created_at', 'product_id', 'product_name', 'product_description', 'product_category', 'product_brand', 'product_price', 'product_inventory', 'product_weight'],
+                popularity: 'Low'
+            },
+            {
+                tableName: 'stg_product',
+                database: 'Snowflake',
+                columns: ['id', 'name', 'price', 'created_at', 'updated_at', 'category', 'price', 'cost', 'inventory', 'weight', 'isbn'],
+                popularity: 'Medium'
+            }
+            // Add more tables as needed
+        ],
+        linkages: [
+            {
+                fromTable: 'raw_product_data',
+                fromColumn: 'product_name',
+                toTable: 'stg_product',
+                toColumn: 'name'
+            }
+            // Add more linkages as needed
+        ]
     };
-}
 
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById('lineage-container');
-    createNodes(container, data.nodes);
-    drawLinks();
+    const lineageContainer = document.getElementById('lineage-container');
+
+    function createLineageNode(tableData, index) {
+        const node = document.createElement('div');
+        node.className = 'node';
+        node.id = `node-${index}`;
+        node.draggable = true;
+
+        const title = document.createElement('div');
+        title.className = 'node-title';
+        title.innerHTML = `${tableData.tableName} <span>${tableData.database}</span>`;
+        node.appendChild(title);
+
+        const separator = document.createElement('div');
+        separator.className = 'separator';
+        node.appendChild(separator);
+
+        const columnsList = document.createElement('ul');
+        columnsList.className = 'node-columns';
+        tableData.columns.forEach((column, columnIndex) => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = column;
+            listItem.id = `node-${index}-column-${columnIndex}`;
+            listItem.dataset.columnName = column;
+            columnsList.appendChild(listItem);
+        });
+        node.appendChild(columnsList);
+
+        title.addEventListener('click', () => {
+            if (columnsList.style.display === 'none' || columnsList.style.display === '') {
+                columnsList.style.display = 'block';
+            } else {
+                columnsList.style.display = 'none';
+            }
+            updateLines();
+        });
+
+        node.addEventListener('dragstart', dragStart);
+        node.addEventListener('dragend', dragEnd);
+
+        return node;
+    }
+
+    function drawLink(startElement, endElement) {
+        const svg = d3.select('#svgContainer');
+        const startRect = startElement.getBoundingClientRect();
+        const endRect = endElement.getBoundingClientRect();
+
+        const startX = startRect.right + window.scrollX;
+        const startY = startRect.top + window.scrollY + (startRect.height / 2);
+        const endX = endRect.left + window.scrollX;
+        const endY = endRect.top + window.scrollY + (endRect.height / 2);
+
+        svg.append('path')
+            .attr('d', `M${startX},${startY} C${(startX + endX) / 2},${startY} ${(startX + endX) / 2},${endY} ${endX},${endY}`)
+            .attr('stroke', 'black')
+            .attr('fill', 'none');
+    }
+
+    data.tables.forEach((tableData, index) => {
+        const lineageNode = createLineageNode(tableData, index);
+        lineageContainer.appendChild(lineageNode);
+    });
+
+    function updateLines() {
+        const svg = d3.select('#svgContainer');
+        svg.selectAll('*').remove();
+
+        data.linkages.forEach(linkage => {
+            const fromTableIndex = data.tables.findIndex(table => table.tableName === linkage.fromTable);
+            const toTableIndex = data.tables.findIndex(table => table.tableName === linkage.toTable);
+
+            if (fromTableIndex !== -1 && toTableIndex !== -1) {
+                const fromColumnIndex = data.tables[fromTableIndex].columns.findIndex(column => column === linkage.fromColumn);
+                const toColumnIndex = data.tables[toTableIndex].columns.findIndex(column => column === linkage.toColumn);
+
+                const fromElement = document.getElementById(`node-${fromTableIndex}`);
+                const toElement = document.getElementById(`node-${toTableIndex}`);
+
+                const fromColumnElement = document.getElementById(`node-${fromTableIndex}-column-${fromColumnIndex}`);
+                const toColumnElement = document.getElementById(`node-${toTableIndex}-column-${toColumnIndex}`);
+
+                const fromElementToUse = fromColumnElement.style.display === 'block' ? fromColumnElement : fromElement.querySelector('.node-title');
+                const toElementToUse = toColumnElement.style.display === 'block' ? toColumnElement : toElement.querySelector('.node-title');
+
+                drawLink(fromElementToUse, toElementToUse);
+            }
+        });
+    }
+
+    let dragSrcEl = null;
+    let offsetX, offsetY;
+
+    function dragStart(e) {
+        dragSrcEl = this;
+        const rect = this.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        e.dataTransfer.setData('text/plain', ''); // Required for Firefox
+        this.style.opacity = '0.4';
+    }
+
+    function dragEnd(e) {
+        this.style.opacity = '1.0';
+        const newX = e.clientX - offsetX;
+        const newY = e.clientY - offsetY;
+        this.style.left = `${newX}px`;
+        this.style.top = `${newY}px`;
+        updateLines();
+    }
+
+    document.querySelectorAll('.node').forEach(node => {
+        node.addEventListener('dragstart', dragStart);
+        node.addEventListener('dragend', dragEnd);
+    });
+
+    updateLines();
 });
