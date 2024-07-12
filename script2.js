@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Example data for tables and linkages
     const data = {
         tables: [
             {
@@ -13,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 database: 'Snowflake',
                 columns: ['id', 'name', 'price', 'created_at', 'updated_at', 'category', 'price', 'cost', 'inventory', 'weight', 'isbn'],
                 popularity: 'Medium'
-            },
+            }
             // Add more tables as needed
         ],
         linkages: [
@@ -27,68 +26,51 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
-    // Function to create a lineage node
+    const lineageContainer = document.getElementById('lineage-container');
+
     function createLineageNode(tableData, index) {
-        // Create the node container
         const node = document.createElement('div');
         node.className = 'node';
         node.id = `node-${index}`;
-        node.style.left = '50%';
-        node.style.top = '50%';
-        node.style.transform = 'translate(-50%, -50%)';
         node.draggable = true;
 
-        // Create the node title
         const title = document.createElement('div');
         title.className = 'node-title';
-        title.innerHTML = `
-            ${tableData.tableName}
-            <span>${tableData.database}</span>
-            <span class="icon">&#9662;</span>
-        `;
+        title.innerHTML = `${tableData.tableName} <span>${tableData.database}</span>`;
         node.appendChild(title);
 
-        // Create the separator line
         const separator = document.createElement('div');
         separator.className = 'separator';
         node.appendChild(separator);
 
-        // Create the list of columns
         const columnsList = document.createElement('ul');
         columnsList.className = 'node-columns';
         tableData.columns.forEach((column, columnIndex) => {
             const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                <span>${column}</span>
-                <span class="icon">&#9679;</span>
-            `;
+            listItem.innerHTML = column;
             listItem.id = `node-${index}-column-${columnIndex}`;
-            listItem.dataset.columnName = column; // Store column name in dataset
+            listItem.dataset.columnName = column;
             columnsList.appendChild(listItem);
         });
         node.appendChild(columnsList);
 
-        // Add click event to the title to toggle visibility of columns
         title.addEventListener('click', () => {
             if (columnsList.style.display === 'none' || columnsList.style.display === '') {
                 columnsList.style.display = 'block';
-                title.querySelector('.icon').innerHTML = '&#9652;'; // Up arrow
             } else {
                 columnsList.style.display = 'none';
-                title.querySelector('.icon').innerHTML = '&#9662;'; // Down arrow
             }
+            updateLines();
         });
 
-        // Add drag event listeners to the node
         node.addEventListener('dragstart', dragStart);
         node.addEventListener('dragend', dragEnd);
 
         return node;
     }
 
-    // Function to draw a line between two elements
-    function drawLine(startElement, endElement) {
-        const svg = document.getElementById('svgContainer');
+    function drawLink(startElement, endElement) {
+        const svg = d3.select('#svgContainer');
         const startRect = startElement.getBoundingClientRect();
         const endRect = endElement.getBoundingClientRect();
 
@@ -97,45 +79,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const endX = endRect.left + window.scrollX;
         const endY = endRect.top + window.scrollY + (endRect.height / 2);
 
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', startX);
-        line.setAttribute('y1', startY);
-        line.setAttribute('x2', endX);
-        line.setAttribute('y2', endY);
-        line.setAttribute('stroke', 'black');
-        line.setAttribute('stroke-width', '2');
-
-        svg.appendChild(line);
+        svg.append('path')
+            .attr('d', `M${startX},${startY} C${(startX + endX) / 2},${startY} ${(startX + endX) / 2},${endY} ${endX},${endY}`)
+            .attr('stroke', 'black')
+            .attr('fill', 'none');
     }
 
-    // Get the container for lineage nodes
-    const lineageContainer = document.getElementById('lineage-container');
-
-    // Create and add lineage nodes to the container
     data.tables.forEach((tableData, index) => {
         const lineageNode = createLineageNode(tableData, index);
         lineageContainer.appendChild(lineageNode);
     });
 
-    // Draw the linkages
-    data.linkages.forEach(linkage => {
-        const fromTableIndex = data.tables.findIndex(table => table.tableName === linkage.fromTable);
-        const toTableIndex = data.tables.findIndex(table => table.tableName === linkage.toTable);
+    function updateLines() {
+        const svg = d3.select('#svgContainer');
+        svg.selectAll('*').remove();
 
-        if (fromTableIndex !== -1 && toTableIndex !== -1) {
-            const fromColumnIndex = data.tables[fromTableIndex].columns.findIndex(column => column === linkage.fromColumn);
-            const toColumnIndex = data.tables[toTableIndex].columns.findIndex(column => column === linkage.toColumn);
+        data.linkages.forEach(linkage => {
+            const fromTableIndex = data.tables.findIndex(table => table.tableName === linkage.fromTable);
+            const toTableIndex = data.tables.findIndex(table => table.tableName === linkage.toTable);
 
-            if (fromColumnIndex !== -1 && toColumnIndex !== -1) {
+            if (fromTableIndex !== -1 && toTableIndex !== -1) {
+                const fromColumnIndex = data.tables[fromTableIndex].columns.findIndex(column => column === linkage.fromColumn);
+                const toColumnIndex = data.tables[toTableIndex].columns.findIndex(column => column === linkage.toColumn);
+
+                const fromElement = document.getElementById(`node-${fromTableIndex}`);
+                const toElement = document.getElementById(`node-${toTableIndex}`);
+
                 const fromColumnElement = document.getElementById(`node-${fromTableIndex}-column-${fromColumnIndex}`);
                 const toColumnElement = document.getElementById(`node-${toTableIndex}-column-${toColumnIndex}`);
 
-                drawLine(fromColumnElement, toColumnElement);
-            }
-        }
-    });
+                const fromElementToUse = fromColumnElement.style.display === 'block' ? fromColumnElement : fromElement.querySelector('.node-title');
+                const toElementToUse = toColumnElement.style.display === 'block' ? toColumnElement : toElement.querySelector('.node-title');
 
-    // Drag functions
+                drawLink(fromElementToUse, toElementToUse);
+            }
+        });
+    }
+
     let dragSrcEl = null;
     let offsetX, offsetY;
 
@@ -154,35 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const newY = e.clientY - offsetY;
         this.style.left = `${newX}px`;
         this.style.top = `${newY}px`;
-        this.style.transform = 'none'; // Reset transform
         updateLines();
-    }
-
-    function updateLines() {
-        const svg = document.getElementById('svgContainer');
-        while (svg.firstChild) {
-            svg.removeChild(svg.firstChild);
-        }
-        data.linkages.forEach(linkage => {
-            const fromTableIndex = data.tables.findIndex(table => table.tableName === linkage.fromTable);
-            const toTableIndex = data.tables.findIndex(table => table.tableName === linkage.toTable);
-
-            if (fromTableIndex !== -1 && toTableIndex !== -1) {
-                const fromColumnIndex = data.tables[fromTableIndex].columns.findIndex(column => column === linkage.fromColumn);
-                const toColumnIndex = data.tables[toTableIndex].columns.findIndex(column => column === linkage.toColumn);
-
-                if (fromColumnIndex !== -1 && toColumnIndex !== -1) {
-                    const fromColumnElement = document.getElementById(`node-${fromTableIndex}-column-${fromColumnIndex}`);
-                    const toColumnElement = document.getElementById(`node-${toTableIndex}-column-${toColumnIndex}`);
-
-                    drawLine(fromColumnElement, toColumnElement);
-                }
-            }
-        });
     }
 
     document.querySelectorAll('.node').forEach(node => {
         node.addEventListener('dragstart', dragStart);
         node.addEventListener('dragend', dragEnd);
     });
+
+    updateLines();
 });
