@@ -137,16 +137,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Drag functions
     let dragSrcEl = null;
+    let offsetX, offsetY;
 
     function dragStart(e) {
         dragSrcEl = this;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
+        const rect = this.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        e.dataTransfer.setData('text/plain', ''); // Required for Firefox
         this.style.opacity = '0.4';
     }
 
     function dragEnd(e) {
         this.style.opacity = '1.0';
+        const newX = e.clientX - offsetX;
+        const newY = e.clientY - offsetY;
+        this.style.left = `${newX}px`;
+        this.style.top = `${newY}px`;
+        this.style.transform = 'none'; // Reset transform
+        updateLines();
+    }
+
+    function updateLines() {
         const svg = document.getElementById('svgContainer');
         while (svg.firstChild) {
             svg.removeChild(svg.firstChild);
@@ -163,4 +175,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fromColumnElement = document.getElementById(`node-${fromTableIndex}-column-${fromColumnIndex}`);
                     const toColumnElement = document.getElementById(`node-${toTableIndex}-column-${toColumnIndex}`);
 
-                    draw
+                    drawLine(fromColumnElement, toColumnElement);
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.node').forEach(node => {
+        node.addEventListener('dragstart', dragStart);
+        node.addEventListener('dragend', dragEnd);
+    });
+});
