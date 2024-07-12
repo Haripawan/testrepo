@@ -6,8 +6,8 @@ const data = {
         { id: 3, title: "Node 3", columns: ["Column 1", "Column 2", "Column 3"] },
     ],
     links: [
-        { source: 1, target: 2 },
-        { source: 2, target: 3 },
+        { source: { node: 1, column: "Column 1" }, target: { node: 2, column: "Column 1" } },
+        { source: { node: 2, column: "Column 2" }, target: { node: 3, column: "Column 2" } },
     ]
 };
 
@@ -16,7 +16,7 @@ function createNodes(container, nodes) {
     nodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
-        nodeEl.style.left = `${index * 220}px`; // Adjust horizontal spacing as needed
+        nodeEl.style.left = `${index * 240}px`; // Adjust horizontal spacing as needed
         nodeEl.style.top = `50%`;
         nodeEl.style.transform = `translateY(-50%)`;
 
@@ -25,6 +25,7 @@ function createNodes(container, nodes) {
         titleEl.innerText = node.title;
         titleEl.addEventListener('click', () => {
             columnsEl.style.display = columnsEl.style.display === 'none' ? 'block' : 'none';
+            drawLinks();
         });
 
         const columnsEl = document.createElement('ul');
@@ -43,6 +44,8 @@ function createNodes(container, nodes) {
         nodeEl.draggable = true;
         nodeEl.ondragstart = dragStart;
         nodeEl.ondragend = dragEnd;
+        
+        node.element = nodeEl; // Store the element reference
     });
 }
 
@@ -58,21 +61,30 @@ function dragEnd(event) {
     currentDragNode.style.left = `${event.clientX - currentDragNode.offsetWidth / 2}px`;
     currentDragNode.style.top = `${event.clientY - currentDragNode.offsetHeight / 2}px`;
     currentDragNode = null;
+    drawLinks();
 }
 
 // Create SVG links between nodes
-function createLinks(svg, links, nodes) {
+function drawLinks() {
+    const svg = d3.select("#svgContainer");
+    svg.selectAll("*").remove(); // Clear previous links
+
     const lineGenerator = d3.line()
         .x(d => d.x)
         .y(d => d.y)
         .curve(d3.curveBasis);
 
-    links.forEach(link => {
-        const sourceNode = nodes.find(n => n.id === link.source);
-        const targetNode = nodes.find(n => n.id === link.target);
-        
-        const sourcePos = getElementCenter(sourceNode.element);
-        const targetPos = getElementCenter(targetNode.element);
+    data.links.forEach(link => {
+        const sourceNode = data.nodes.find(n => n.id === link.source.node);
+        const targetNode = data.nodes.find(n => n.id === link.target.node);
+
+        const sourceElement = Array.from(sourceNode.element.querySelectorAll('.node-columns li'))
+            .find(el => el.innerText === link.source.column);
+        const targetElement = Array.from(targetNode.element.querySelectorAll('.node-columns li'))
+            .find(el => el.innerText === link.target.column);
+
+        const sourcePos = getElementCenter(sourceElement);
+        const targetPos = getElementCenter(targetElement);
 
         const pathData = lineGenerator([sourcePos, targetPos]);
 
@@ -94,10 +106,6 @@ function getElementCenter(element) {
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById('lineage-container');
-    const svg = d3.select("#svgContainer");
     createNodes(container, data.nodes);
-    createLinks(svg, data.links, data.nodes.map(node => ({
-        id: node.id,
-        element: document.querySelector(`.node:nth-child(${node.id})`)
-    })));
+    drawLinks();
 });
