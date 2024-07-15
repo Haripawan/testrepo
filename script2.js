@@ -90,10 +90,13 @@ function drawLinks() {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
         const targetNode = data.nodes.find(n => n.id === link.target.node);
 
-        const sourceElement = Array.from(sourceNode.element.querySelectorAll('.node-columns li'))
-            .find(el => el.innerText === link.source.column);
-        const targetElement = Array.from(targetNode.element.querySelectorAll('.node-columns li'))
-            .find(el => el.innerText === link.target.column);
+        const sourceElement = sourceNode.expanded
+            ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
+            : sourceNode.element.querySelector('.node-title');
+        
+        const targetElement = targetNode.expanded
+            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
+            : targetNode.element.querySelector('.node-title');
 
         const sourcePos = getElementCenter(sourceElement);
         const targetPos = getElementCenter(targetElement);
