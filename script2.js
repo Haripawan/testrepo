@@ -86,6 +86,9 @@ function drawLinks() {
     const svg = d3.select("#svgContainer");
     svg.selectAll("*").remove(); // Clear previous links
 
+    // Clear previous highlights
+    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+
     data.links.forEach(link => {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
         const targetNode = data.nodes.find(n => n.id === link.target.node);
@@ -107,6 +110,10 @@ function drawLinks() {
             .attr("d", pathData)
             .attr("stroke", "black")
             .attr("fill", "none");
+
+        // Highlight columns involved in the linkage
+        if (sourceNode.expanded) sourceElement.classList.add('highlight');
+        if (targetNode.expanded) targetElement.classList.add('highlight');
     });
 }
 
