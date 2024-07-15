@@ -109,6 +109,7 @@ function drawLinks() {
         svg.append("path")
             .attr("d", pathData)
             .attr("stroke", "black")
+            .attr("stroke-width", 2)
             .attr("fill", "none");
 
         // Highlight columns involved in the linkage
@@ -139,9 +140,9 @@ function generatePathData(source, target) {
 // Center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
-    const containerRect = container.getBoundingClientRect();
     const totalWidth = data.nodes.length * 240; // Adjust based on node width and spacing
-    const leftOffset = (containerRect.width - totalWidth) / 2;
+    const viewportWidth = window.innerWidth;
+    const leftOffset = (viewportWidth - totalWidth) / 2;
     container.style.left = `${leftOffset}px`;
 }
 
@@ -151,4 +152,5 @@ document.addEventListener("DOMContentLoaded", () => {
     createNodes(container, data.nodes);
     drawLinks();
     centerLineage();
+    window.addEventListener('resize', centerLineage); // Recenter on window resize
 });
