@@ -1,9 +1,9 @@
 // Sample data
 const data = {
     nodes: [
-        { id: 1, title: "Node 1", columns: ["Column 1", "Column 2", "Column 3"] },
-        { id: 2, title: "Node 2", columns: ["Column 1", "Column 2", "Column 3"] },
-        { id: 3, title: "Node 3", columns: ["Column 1", "Column 2", "Column 3"] },
+        { id: 1, title: "Node 1", columns: ["Column 1", "Column 2", "Column 3"], expanded: true },
+        { id: 2, title: "Node 2", columns: ["Column 1", "Column 2", "Column 3"], expanded: true },
+        { id: 3, title: "Node 3", columns: ["Column 1", "Column 2", "Column 3"], expanded: true },
     ],
     links: [
         { source: { node: 1, column: "Column 1" }, target: { node: 2, column: "Column 1" } },
@@ -23,13 +23,30 @@ function createNodes(container, nodes) {
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
         titleEl.innerText = node.title;
-        titleEl.addEventListener('click', () => {
-            columnsEl.style.display = columnsEl.style.display === 'none' ? 'block' : 'none';
+
+        const actionsEl = document.createElement('div');
+        actionsEl.className = 'actions';
+        
+        const collapseExpandEl = document.createElement('span');
+        collapseExpandEl.innerText = node.expanded ? '-' : '+';
+        collapseExpandEl.addEventListener('click', () => {
+            node.expanded = !node.expanded;
+            collapseExpandEl.innerText = node.expanded ? '-' : '+';
+            columnsEl.style.display = node.expanded ? 'block' : 'none';
             drawLinks();
         });
 
+        const lineageEl = document.createElement('span');
+        lineageEl.innerText = '→';
+        // Implement lineage click action if needed
+
+        actionsEl.appendChild(collapseExpandEl);
+        actionsEl.appendChild(lineageEl);
+        titleEl.appendChild(actionsEl);
+
         const columnsEl = document.createElement('ul');
         columnsEl.className = 'node-columns';
+        columnsEl.style.display = node.expanded ? 'block' : 'none';
         node.columns.forEach(col => {
             const colEl = document.createElement('li');
             colEl.innerText = col;
@@ -69,11 +86,6 @@ function drawLinks() {
     const svg = d3.select("#svgContainer");
     svg.selectAll("*").remove(); // Clear previous links
 
-    const lineGenerator = d3.line()
-        .x(d => d.x)
-        .y(d => d.y)
-        .curve(d3.curveBasis);
-
     data.links.forEach(link => {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
         const targetNode = data.nodes.find(n => n.id === link.target.node);
@@ -86,7 +98,7 @@ function drawLinks() {
         const sourcePos = getElementCenter(sourceElement);
         const targetPos = getElementCenter(targetElement);
 
-        const pathData = lineGenerator([sourcePos, targetPos]);
+        const pathData = generatePathData(sourcePos, targetPos);
 
         svg.append("path")
             .attr("d", pathData)
@@ -101,6 +113,17 @@ function getElementCenter(element) {
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2
     };
+}
+
+function generatePathData(source, target) {
+    const midX = (source.x + target.x) / 2;
+    const midY = (source.y + target.y) / 2;
+    const curveOffset = 50;
+
+    return `M${source.x},${source.y} 
+            C${midX - curveOffset},${source.y} 
+             ${midX + curveOffset},${target.y} 
+             ${target.x},${target.y}`;
 }
 
 // Initialize
