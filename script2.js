@@ -6,7 +6,7 @@ const data = {
         { id: 3, title: "Node 3", columns: ["Column 1", "Column 2", "Column 3"], expanded: true },
     ],
     links: [
-        { source: { node: 1, column: "Column 1" }, target: { node: 2, column: "Column 1" } },
+        { source: { node: 1, column: "Column 1" }, target: { node: 3, column: "Column 1" } },
         { source: { node: 2, column: "Column 2" }, target: { node: 3, column: "Column 2" } },
     ]
 };
@@ -16,9 +16,14 @@ function createNodes(container, nodes) {
     nodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
-        nodeEl.style.left = `${index * 240}px`; // Adjust horizontal spacing as needed
-        nodeEl.style.top = `50%`;
-        nodeEl.style.transform = `translateY(-50%)`;
+
+        if (index === 2) {
+            nodeEl.style.left = `500px`; // Position third node to the right
+            nodeEl.style.top = `calc(50% - 100px)`;
+        } else {
+            nodeEl.style.left = `50px`; // Position first two nodes to the left
+            nodeEl.style.top = `${50 + index * 220}px`; // Stack the first two nodes vertically
+        }
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
@@ -154,3 +159,5 @@ document.addEventListener("DOMContentLoaded", () => {
     centerLineage();
     window.addEventListener('resize', centerLineage); // Recenter on window resize
 });
+
+ 
