@@ -23,7 +23,7 @@ function createNodes(container, nodes) {
             nodeEl.style.transform = `translate(-50%, -50%)`;
         } else {
             nodeEl.style.left = `50px`; // Position first two nodes to the left
-            nodeEl.style.top = `${50 + index * 220}px`; // Stack the first two nodes vertically
+            nodeEl.style.top = `${50 + index * 180}px`; // Stack the first two nodes vertically
         }
 
         const titleEl = document.createElement('div');
@@ -56,6 +56,9 @@ function createNodes(container, nodes) {
         node.columns.forEach(col => {
             const colEl = document.createElement('li');
             colEl.innerText = col;
+            colEl.addEventListener('click', () => {
+                highlightLinks(node.id, col);
+            });
             columnsEl.appendChild(colEl);
         });
 
@@ -104,6 +107,7 @@ function drawLinks() {
     });
 }
 
+// Function to get the center of an element
 function getElementCenter(element) {
     const rect = element.getBoundingClientRect();
     return {
@@ -112,21 +116,46 @@ function getElementCenter(element) {
     };
 }
 
+// Function to generate right-angle path data
 function generatePathData(source, target) {
     const midX = (source.x + target.x) / 2;
-    const midY = (source.y + target.y) / 2;
-    const curveOffset = 50;
-
     return `M${source.x},${source.y} 
-            C${midX - curveOffset},${source.y} 
-             ${midX + curveOffset},${target.y} 
-             ${target.x},${target.y}`;
+            L${midX},${source.y} 
+            L${midX},${target.y} 
+            L${target.x},${target.y}`;
+}
+
+// Function to highlight links
+function highlightLinks(nodeId, columnName) {
+    document.querySelectorAll('path').forEach(path => path.classList.remove('line-highlight'));
+    data.links.forEach(link => {
+        if ((link.source.node === nodeId && link.source.column === columnName) ||
+            (link.target.node === nodeId && link.target.column === columnName)) {
+            const sourceNode = data.nodes.find(n => n.id === link.source.node);
+            const targetNode = data.nodes.find(n => n.id === link.target.node);
+            const sourceElement = sourceNode.expanded
+                ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
+                : sourceNode.element.querySelector('.node-title');
+            const targetElement = targetNode.expanded
+                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
+                : targetNode.element.querySelector('.node-title');
+            const sourcePos = getElementCenter(sourceElement);
+            const targetPos = getElementCenter(targetElement);
+            const pathData = generatePathData(sourcePos, targetPos);
+            d3.select('svg').append("path")
+                .attr("d", pathData)
+                .attr("stroke", "orange")
+                .attr("stroke-width", 4)
+                .attr("fill", "none")
+                .classed('line-highlight', true);
+        }
+    });
 }
 
 // Center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
-    const totalHeight = data.nodes.length * 220; // Adjust based on node height and spacing
+    const totalHeight = data.nodes.length * 180; // Adjust based on node height and spacing
     const viewportHeight = window.innerHeight;
     const topOffset = (viewportHeight - totalHeight) / 2;
     container.style.top = `${topOffset}px`;
