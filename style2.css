@@ -72,3 +72,7 @@ body {
     background-color: #ccc;
     margin: 0 10px;
 }
+
+.highlight {
+    background-color: #ffeb3b;
+}
