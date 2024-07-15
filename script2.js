@@ -136,9 +136,19 @@ function generatePathData(source, target) {
              ${target.x},${target.y}`;
 }
 
+// Center the lineage container
+function centerLineage() {
+    const container = document.getElementById('lineage-container');
+    const containerRect = container.getBoundingClientRect();
+    const totalWidth = data.nodes.length * 240; // Adjust based on node width and spacing
+    const leftOffset = (containerRect.width - totalWidth) / 2;
+    container.style.left = `${leftOffset}px`;
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById('lineage-container');
     createNodes(container, data.nodes);
     drawLinks();
+    centerLineage();
 });
