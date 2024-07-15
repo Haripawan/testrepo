@@ -11,20 +11,20 @@ const data = {
     ]
 };
 
-// Function to create nodes
-function createNodes(container, nodes) {
-    nodes.forEach((node, index) => {
+// Function to create nodes based on links
+function createNodes(container, nodes, links) {
+    // Sort nodes based on links to determine order
+    const sortedNodes = sortNodesByLinks(nodes, links);
+
+    // Calculate positions for nodes
+    const nodePositions = calculateNodePositions(sortedNodes);
+
+    // Create nodes
+    sortedNodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
-
-        if (index === 2) {
-            nodeEl.style.left = `50%`;
-            nodeEl.style.top = `50%`;
-            nodeEl.style.transform = `translate(-50%, -50%)`;
-        } else {
-            nodeEl.style.left = `50px`; // Position first two nodes to the left
-            nodeEl.style.top = `${50 + index * 180}px`; // Stack the first two nodes vertically
-        }
+        nodeEl.style.left = `${nodePositions[index].x}px`;
+        nodeEl.style.top = `${nodePositions[index].y}px`;
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
@@ -68,6 +68,69 @@ function createNodes(container, nodes) {
         
         node.element = nodeEl; // Store the element reference
     });
+
+    // Redraw links after creating nodes
+    drawLinks();
+}
+
+// Function to sort nodes based on links to determine left-right positioning
+function sortNodesByLinks(nodes, links) {
+    const nodeMap = new Map(nodes.map(node => [node.id, node]));
+    const sortedNodes = [];
+
+    // Starting with nodes that are source only
+    const sourceNodes = nodes.filter(node => !links.some(link => link.target.node === node.id));
+    sourceNodes.forEach(node => {
+        sortedNodes.push(node);
+        addConnectedNodes(node.id, sortedNodes, links, nodeMap, 'target');
+    });
+
+    return sortedNodes;
+}
+
+// Recursive function to add connected nodes
+function addConnectedNodes(nodeId, sortedNodes, links, nodeMap, direction) {
+    const connectedLinks = links.filter(link => link[direction].node === nodeId);
+    connectedLinks.forEach(link => {
+        const connectedNode = nodeMap.get(link[direction === 'source' ? 'target' : 'source'].node);
+        if (!sortedNodes.includes(connectedNode)) {
+            sortedNodes.push(connectedNode);
+            addConnectedNodes(connectedNode.id, sortedNodes, links, nodeMap, direction);
+        }
+    });
+}
+
+// Function to calculate node positions
+function calculateNodePositions(nodes) {
+    const nodePositions = [];
+    const totalNodes = nodes.length;
+    const spacingY = 180;
+    const leftMargin = 50;
+    const rightMargin = 50;
+    const canvasHeight = window.innerHeight - 100; // Adjust as needed
+
+    const centerY = canvasHeight / 2;
+    const leftNodesCount = nodes.filter(node => !node.links.some(link => link.target === node.id)).length;
+    const rightNodesCount = totalNodes - leftNodesCount;
+
+    let leftIndex = 0;
+    let rightIndex = 0;
+
+    nodes.forEach((node, index) => {
+        if (!node.links.some(link => link.target === node.id)) {
+            // Node is a source node
+            const y = centerY - ((leftNodesCount - 1) / 2 - leftIndex) * spacingY;
+            nodePositions.push({ x: leftMargin, y: y });
+            leftIndex++;
+        } else {
+            // Node is a target node
+            const y = centerY - ((rightNodesCount - 1) / 2 - rightIndex) * spacingY;
+            nodePositions.push({ x: window.innerWidth - rightMargin, y: y });
+            rightIndex++;
+        }
+    });
+
+    return nodePositions;
 }
 
 // Create SVG links between nodes
@@ -141,7 +204,7 @@ function toggleHighlight(nodeId, columnName) {
                 ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
                 : sourceNode.element.querySelector('.node-title');
             const targetElement = targetNode.expanded
-                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
+                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
                 : targetNode.element.querySelector('.node-title');
             const sourcePos = getElementCenter(sourceElement);
             const targetPos = getElementCenter(targetElement);
