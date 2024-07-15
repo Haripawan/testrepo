@@ -66,6 +66,7 @@ body {
     padding: 5px 0;
     display: flex;
     justify-content: space-between;
+    cursor: pointer;
 }
 
 .separator {
@@ -76,4 +77,8 @@ body {
 
 .highlight {
     background-color: #ffeb3b;
+}
+
+.line-highlight {
+    stroke: orange !important;
 }
