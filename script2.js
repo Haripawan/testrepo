@@ -57,7 +57,7 @@ function createNodes(container, nodes) {
             const colEl = document.createElement('li');
             colEl.innerText = col;
             colEl.addEventListener('click', () => {
-                highlightLinks(node.id, col);
+                toggleHighlight(node.id, col);
             });
             columnsEl.appendChild(colEl);
         });
@@ -116,18 +116,26 @@ function getElementCenter(element) {
     };
 }
 
-// Function to generate right-angle path data
+// Function to generate path data (straight or right-angle)
 function generatePathData(source, target) {
-    const midX = (source.x + target.x) / 2;
-    return `M${source.x},${source.y} 
-            L${midX},${source.y} 
-            L${midX},${target.y} 
-            L${target.x},${target.y}`;
+    if (source.x === target.x) {
+        // Vertical alignment (right-angle path)
+        const midX = source.x + 50;
+        return `M${source.x},${source.y} 
+                L${midX},${source.y} 
+                L${midX},${target.y} 
+                L${target.x},${target.y}`;
+    } else {
+        // Horizontal alignment (straight path)
+        return `M${source.x},${source.y} L${target.x},${target.y}`;
+    }
 }
 
-// Function to highlight links
-function highlightLinks(nodeId, columnName) {
-    document.querySelectorAll('path').forEach(path => path.classList.remove('line-highlight'));
+// Function to toggle highlight on column click
+function toggleHighlight(nodeId, columnName) {
+    const highlightedPaths = document.querySelectorAll('.line-highlight');
+    highlightedPaths.forEach(path => path.classList.remove('line-highlight'));
+
     data.links.forEach(link => {
         if ((link.source.node === nodeId && link.source.column === columnName) ||
             (link.target.node === nodeId && link.target.column === columnName)) {
@@ -142,12 +150,21 @@ function highlightLinks(nodeId, columnName) {
             const sourcePos = getElementCenter(sourceElement);
             const targetPos = getElementCenter(targetElement);
             const pathData = generatePathData(sourcePos, targetPos);
-            d3.select('svg').append("path")
-                .attr("d", pathData)
-                .attr("stroke", "orange")
-                .attr("stroke-width", 4)
-                .attr("fill", "none")
-                .classed('line-highlight', true);
+
+            const existingPath = d3.select('svg').selectAll('path')
+                .filter(function(d) {
+                    return d.source.node === link.source.node && d.source.column === link.source.column &&
+                           d.target.node === link.target.node && d.target.column === link.target.column;
+                });
+
+            if (existingPath.empty()) {
+                d3.select('svg').append("path")
+                    .attr("d", pathData)
+                    .attr("stroke", "orange")
+                    .attr("stroke-width", 4)
+                    .attr("fill", "none")
+                    .classed('line-highlight', true);
+            }
         }
     });
 }
