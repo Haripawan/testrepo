@@ -18,8 +18,9 @@ function createNodes(container, nodes) {
         nodeEl.className = 'node';
 
         if (index === 2) {
-            nodeEl.style.left = `500px`; // Position third node to the right
-            nodeEl.style.top = `calc(50% - 100px)`;
+            nodeEl.style.left = `50%`;
+            nodeEl.style.top = `50%`;
+            nodeEl.style.transform = `translate(-50%, -50%)`;
         } else {
             nodeEl.style.left = `50px`; // Position first two nodes to the left
             nodeEl.style.top = `${50 + index * 220}px`; // Stack the first two nodes vertically
@@ -62,28 +63,8 @@ function createNodes(container, nodes) {
         nodeEl.appendChild(columnsEl);
         container.appendChild(nodeEl);
         
-        // Make the node draggable
-        nodeEl.draggable = true;
-        nodeEl.ondragstart = dragStart;
-        nodeEl.ondragend = dragEnd;
-        
         node.element = nodeEl; // Store the element reference
     });
-}
-
-// Drag and Drop Functions
-let currentDragNode = null;
-
-function dragStart(event) {
-    currentDragNode = event.target;
-    event.dataTransfer.setData('text/plain', '');
-}
-
-function dragEnd(event) {
-    currentDragNode.style.left = `${event.clientX - currentDragNode.offsetWidth / 2}px`;
-    currentDragNode.style.top = `${event.clientY - currentDragNode.offsetHeight / 2}px`;
-    currentDragNode = null;
-    drawLinks();
 }
 
 // Create SVG links between nodes
@@ -145,10 +126,10 @@ function generatePathData(source, target) {
 // Center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
-    const totalWidth = data.nodes.length * 240; // Adjust based on node width and spacing
-    const viewportWidth = window.innerWidth;
-    const leftOffset = (viewportWidth - totalWidth) / 2;
-    container.style.left = `${leftOffset}px`;
+    const totalHeight = data.nodes.length * 220; // Adjust based on node height and spacing
+    const viewportHeight = window.innerHeight;
+    const topOffset = (viewportHeight - totalHeight) / 2;
+    container.style.top = `${topOffset}px`;
 }
 
 // Initialize
@@ -159,5 +140,3 @@ document.addEventListener("DOMContentLoaded", () => {
     centerLineage();
     window.addEventListener('resize', centerLineage); // Recenter on window resize
 });
-
- 
