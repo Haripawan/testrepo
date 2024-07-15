@@ -152,13 +152,34 @@ function highlightLinks(nodeId, columnName) {
     });
 }
 
-// Center the lineage container
+// Center the lineage container and update node positions
 function centerLineage() {
     const container = document.getElementById('lineage-container');
     const totalHeight = data.nodes.length * 180; // Adjust based on node height and spacing
     const viewportHeight = window.innerHeight;
     const topOffset = (viewportHeight - totalHeight) / 2;
     container.style.top = `${topOffset}px`;
+
+    // Update node positions after centering
+    updateNodePositions();
+}
+
+// Function to update node positions
+function updateNodePositions() {
+    data.nodes.forEach((node, index) => {
+        const nodeEl = node.element;
+        if (index === 2) {
+            nodeEl.style.left = `50%`;
+            nodeEl.style.top = `50%`;
+            nodeEl.style.transform = `translate(-50%, -50%)`;
+        } else {
+            nodeEl.style.left = `50px`; // Position first two nodes to the left
+            nodeEl.style.top = `${50 + index * 180}px`; // Stack the first two nodes vertically
+        }
+    });
+
+    // Redraw links after updating node positions
+    drawLinks();
 }
 
 // Initialize
@@ -167,5 +188,9 @@ document.addEventListener("DOMContentLoaded", () => {
     createNodes(container, data.nodes);
     drawLinks();
     centerLineage();
-    window.addEventListener('resize', centerLineage); // Recenter on window resize
+
+    // Recenter and update node positions on window resize
+    window.addEventListener('resize', () => {
+        centerLineage();
+    });
 });
