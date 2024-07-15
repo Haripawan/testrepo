@@ -116,19 +116,15 @@ function getElementCenter(element) {
     };
 }
 
-// Function to generate path data (straight or right-angle)
+// Function to generate path data (curve)
 function generatePathData(source, target) {
-    if (source.x === target.x) {
-        // Vertical alignment (right-angle path)
-        const midX = source.x + 50;
-        return `M${source.x},${source.y} 
-                L${midX},${source.y} 
-                L${midX},${target.y} 
-                L${target.x},${target.y}`;
-    } else {
-        // Horizontal alignment (straight path)
-        return `M${source.x},${source.y} L${target.x},${target.y}`;
-    }
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const xOffset = dx * 0.6; // Adjust the curve intensity
+    const yOffset = dy * 0.6; // Adjust the curve intensity
+
+    // Bezier curve path
+    return `M${source.x},${source.y} C${source.x + xOffset},${source.y} ${target.x - xOffset},${target.y} ${target.x},${target.y}`;
 }
 
 // Function to toggle highlight on column click
