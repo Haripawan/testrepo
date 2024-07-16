@@ -56,9 +56,6 @@ function createNodes(container, nodes, links) {
         node.columns.forEach(col => {
             const colEl = document.createElement('li');
             colEl.innerText = col;
-            colEl.addEventListener('click', () => {
-                toggleHighlight(node.id, col, colEl);
-            });
             columnsEl.appendChild(colEl);
         });
 
@@ -138,9 +135,6 @@ function drawLinks() {
     const svg = d3.select("#svgContainer");
     svg.selectAll("*").remove(); // Clear previous links
 
-    // Clear previous highlights
-    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-
     data.links.forEach(link => {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
         const targetNode = data.nodes.find(n => n.id === link.target.node);
@@ -150,7 +144,7 @@ function drawLinks() {
             : sourceNode.element.querySelector('.node-title');
         
         const targetElement = targetNode.expanded
-            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
+            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
             : targetNode.element.querySelector('.node-title');
 
         const sourcePos = getElementCenter(sourceElement);
@@ -189,48 +183,3 @@ function generatePathData(source, target) {
     // Bezier curve path
     return `M${source.x},${source.y} C${source.x + xOffset},${source.y} ${target.x - xOffset},${target.y} ${target.x},${target.y}`;
 }
-
-// Function to toggle highlight on paths and columns
-function toggleHighlight(nodeId, columnName, columnElement) {
-    const svg = d3.select("#svgContainer");
-    const paths = svg.selectAll("path");
-
-    const highlightedPaths = paths.filter(function() {
-        return d3.select(this).classed('line-highlight');
-    });
-
-    const isAlreadyHighlighted = columnElement.classList.contains('highlight');
-
-    if (isAlreadyHighlighted) {
-        // Remove highlights
-        highlightedPaths.classed('line-highlight', false);
-        columnElement.classList.remove('highlight');
-    } else {
-        // Clear previous highlights
-        paths.classed('line-highlight', false);
-        document.querySelectorAll('.node-columns li').forEach(el => el.classList.remove('highlight'));
-
-        // Highlight the paths and columns
-        data.links.forEach(link => {
-            if ((link.source.node === nodeId && link.source.column === columnName) ||
-                (link.target.node === nodeId && link.target.column === columnName)) {
-                
-                const sourceNode = data.nodes.find(n => n.id === link.source.node);
-                const targetNode = data.nodes.find(n => n.id === link.target.node);
-
-                const sourceElement = sourceNode.expanded
-                    ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
-                    : sourceNode.element.querySelector('.node-title');
-                
-                const targetElement = targetNode.expanded
-                    ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
-                    : targetNode.element.querySelector('.node-title');
-
-                // Highlight path
-                paths.filter(function() {
-                    const d = d3.select(this).attr("d");
-                    const sourcePos = getElementCenter(sourceElement);
-                    const targetPos = getElementCenter(targetElement);
-                    const pathData = generatePathData(sourcePos, targetPos);
-                    return d === pathData;
-                }).classed('line-highlight', true);
