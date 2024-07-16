@@ -223,4 +223,14 @@ function toggleHighlight(nodeId, columnName, columnElement) {
                     : sourceNode.element.querySelector('.node-title');
                 
                 const targetElement = targetNode.expanded
-                    ? Array.from(targetNode.element.querySelectorAll('.node-columns li
+                    ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
+                    : targetNode.element.querySelector('.node-title');
+
+                // Highlight path
+                paths.filter(function() {
+                    const d = d3.select(this).attr("d");
+                    const sourcePos = getElementCenter(sourceElement);
+                    const targetPos = getElementCenter(targetElement);
+                    const pathData = generatePathData(sourcePos, targetPos);
+                    return d === pathData;
+                }).classed('line-highlight', true);
