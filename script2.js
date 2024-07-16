@@ -17,6 +17,10 @@ function createNodesAndLinks(data) {
     const verticalSpacing = 180; // Adjust vertical spacing
     const nodesMap = new Map();
 
+    // Calculate the levels of each node
+    const nodeLevels = calculateNodeLevels(data.links);
+    const maxLevel = Math.max(...Object.values(nodeLevels));
+
     // Position nodes based on their hierarchical level
     data.nodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
@@ -24,9 +28,9 @@ function createNodesAndLinks(data) {
         nodesMap.set(node.id, nodeEl);
 
         // Position node
-        const nodeLevel = getNodeLevel(node.id, data.links);
+        const nodeLevel = nodeLevels[node.id];
         nodeEl.style.left = `${nodeLevel * horizontalSpacing}px`;
-        nodeEl.style.top = `${50 + index * verticalSpacing}px`;
+        nodeEl.style.top = `${50 + (index % (maxLevel + 1)) * verticalSpacing}px`;
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
@@ -72,24 +76,25 @@ function createNodesAndLinks(data) {
     });
 
     drawLinks(data, nodesMap);
-    centerLineage(container, data.nodes.length, verticalSpacing);
 }
 
-// Function to determine the level of a node based on its connections
-function getNodeLevel(nodeId, links) {
-    const sourceLinks = links.filter(link => link.source.node === nodeId);
-    const targetLinks = links.filter(link => link.target.node === nodeId);
+// Function to calculate the levels of each node
+function calculateNodeLevels(links) {
+    const nodeLevels = {};
 
-    if (sourceLinks.length === 0 && targetLinks.length === 0) {
-        return 0; // No links, standalone node
+    function setNodeLevel(nodeId, level) {
+        if (nodeLevels[nodeId] == null || nodeLevels[nodeId] < level) {
+            nodeLevels[nodeId] = level;
+            links.filter(link => link.source.node === nodeId)
+                .forEach(link => setNodeLevel(link.target.node, level + 1));
+        }
     }
 
-    if (targetLinks.length === 0) {
-        return 1; // Source node
-    }
+    links.forEach(link => {
+        setNodeLevel(link.source.node, 0);
+    });
 
-    const levels = targetLinks.map(link => getNodeLevel(link.source.node, links));
-    return Math.max(...levels) + 1;
+    return nodeLevels;
 }
 
 // Function to create SVG links between nodes
@@ -109,7 +114,7 @@ function drawLinks(data, nodesMap) {
             : sourceNode.element.querySelector('.node-title');
         
         const targetElement = targetNode.expanded
-            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
+            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
             : targetNode.element.querySelector('.node-title');
 
         const sourcePos = getElementCenter(sourceElement);
@@ -172,14 +177,6 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
                 .classed('line-highlight', true);
         }
     });
-}
-
-// Center the lineage container
-function centerLineage(container, nodeCount, verticalSpacing) {
-    const totalHeight = nodeCount * verticalSpacing; // Adjust based on node height and spacing
-    const viewportHeight = window.innerHeight;
-    const topOffset = (viewportHeight - totalHeight) / 2;
-    container.style.top = `${topOffset}px`;
 }
 
 // Initialize
