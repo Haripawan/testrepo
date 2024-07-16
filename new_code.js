@@ -1,6 +1,3 @@
-Certainly! Below is the complete JavaScript code that you can place in a separate JavaScript file (e.g., `lineage.js`).
-
-```javascript
 // Sample data
 const data = {
     nodes: [
@@ -60,7 +57,7 @@ function createNodes(container, nodes, links) {
             const colEl = document.createElement('li');
             colEl.innerText = col;
             colEl.addEventListener('click', () => {
-                toggleHighlight(node.id, col);
+                toggleHighlight(node.id, col, colEl);
             });
             columnsEl.appendChild(colEl);
         });
@@ -194,29 +191,36 @@ function generatePathData(source, target) {
 }
 
 // Function to toggle highlight on paths and columns
-function toggleHighlight(nodeId, columnName) {
-    const paths = document.querySelectorAll('path');
-    const highlightedPaths = Array.from(paths).filter(path => path.classList.contains('line-highlight'));
-    
-    if (highlightedPaths.length > 0) {
-        highlightedPaths.forEach(path => path.classList.remove('line-highlight'));
+function toggleHighlight(nodeId, columnName, columnElement) {
+    const svg = d3.select("#svgContainer");
+    const paths = svg.selectAll("path");
+
+    const highlightedPaths = paths.filter(function() {
+        return d3.select(this).classed('line-highlight');
+    });
+
+    const isAlreadyHighlighted = columnElement.classList.contains('highlight');
+
+    if (isAlreadyHighlighted) {
+        // Remove highlights
+        highlightedPaths.classed('line-highlight', false);
+        columnElement.classList.remove('highlight');
     } else {
+        // Clear previous highlights
+        paths.classed('line-highlight', false);
+        document.querySelectorAll('.node-columns li').forEach(el => el.classList.remove('highlight'));
+
+        // Highlight the paths and columns
         data.links.forEach(link => {
             if ((link.source.node === nodeId && link.source.column === columnName) ||
                 (link.target.node === nodeId && link.target.column === columnName)) {
+                
                 const sourceNode = data.nodes.find(n => n.id === link.source.node);
                 const targetNode = data.nodes.find(n => n.id === link.target.node);
+
                 const sourceElement = sourceNode.expanded
                     ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
                     : sourceNode.element.querySelector('.node-title');
+                
                 const targetElement = targetNode.expanded
-                    ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
-                    : targetNode.element.querySelector('.node-title');
-                const sourcePos = getElementCenter(sourceElement);
-                const targetPos = getElementCenter(targetElement);
-                const pathData = generatePathData(sourcePos, targetPos);
-                d3.select('svg').append("path")
-                    .attr("d", pathData)
-                    .attr("stroke", "orange")
-                    .attr("stroke-width", 4)
-                    .attr("fill",
+                    ? Array.from(targetNode.element.querySelectorAll('.node-columns li
