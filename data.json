@@ -1,0 +1,26 @@
+{
+    "nodes": [
+        { "id": 1, "title": "Source Node 1", "columns": ["Column A", "Column B", "Column C"], "expanded": true },
+        { "id": 2, "title": "Source Node 2", "columns": ["Column D", "Column E", "Column F"], "expanded": true },
+        { "id": 3, "title": "Source Node 3", "columns": ["Column G", "Column H", "Column I"], "expanded": true },
+        { "id": 4, "title": "Source Node 4", "columns": ["Column J", "Column K", "Column L"], "expanded": true },
+        { "id": 5, "title": "Source Node 5", "columns": ["Column M", "Column N", "Column O"], "expanded": true },
+        { "id": 6, "title": "Target Node 1", "columns": ["Column 1", "Column 2", "Column 3"], "expanded": true },
+        { "id": 7, "title": "Target Node 2", "columns": ["Column 4", "Column 5", "Column 6"], "expanded": true },
+        { "id": 8, "title": "Target Node 3", "columns": ["Column 7", "Column 8", "Column 9"], "expanded": true },
+        { "id": 9, "title": "Target Node 4", "columns": ["Column 10", "Column 11", "Column 12"], "expanded": true },
+        { "id": 10, "title": "Target Node 5", "columns": ["Column 13", "Column 14", "Column 15"], "expanded": true }
+    ],
+    "links": [
+        { "source": { "node": 1, "column": "Column A" }, "target": { "node": 6, "column": "Column 1" } },
+        { "source": { "node": 1, "column": "Column B" }, "target": { "node": 7, "column": "Column 4" } },
+        { "source": { "node": 2, "column": "Column D" }, "target": { "node": 7, "column": "Column 5" } },
+        { "source": { "node": 2, "column": "Column E" }, "target": { "node": 8, "column": "Column 7" } },
+        { "source": { "node": 3, "column": "Column G" }, "target": { "node": 8, "column": "Column 8" } },
+        { "source": { "node": 3, "column": "Column H" }, "target": { "node": 9, "column": "Column 10" } },
+        { "source": { "node": 4, "column": "Column J" }, "target": { "node": 9, "column": "Column 11" } },
+        { "source": { "node": 4, "column": "Column K" }, "target": { "node": 10, "column": "Column 13" } },
+        { "source": { "node": 5, "column": "Column M" }, "target": { "node": 10, "column": "Column 14" } },
+        { "source": { "node": 5, "column": "Column N" }, "target": { "node": 6, "column": "Column 3" } }
+    ]
+}
