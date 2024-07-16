@@ -164,6 +164,13 @@ function highlightLinks(nodeId, columnName) {
     });
 }
 
+// Function to zoom and pan the SVG
+function zoomed(event) {
+    const { transform } = event;
+    d3.select('#svgContainer g')
+        .attr('transform', transform);
+}
+
 // Center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
@@ -180,4 +187,11 @@ document.addEventListener("DOMContentLoaded", () => {
     drawLinks();
     centerLineage();
     window.addEventListener('resize', centerLineage); // Recenter on window resize
+
+    // Add zoom functionality
+    const svg = d3.select('#svgContainer');
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, 2]) // Set zoom scale limits
+        .on('zoom', zoomed);
+    svg.call(zoom);
 });
