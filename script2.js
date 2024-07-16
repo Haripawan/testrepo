@@ -11,20 +11,15 @@ const data = {
     ]
 };
 
-// Function to create nodes based on links
-function createNodes(container, nodes, links) {
-    // Sort nodes based on links to determine order
-    const sortedNodes = sortNodesByLinks(nodes, links);
-
-    // Calculate positions for nodes
-    const nodePositions = calculateNodePositions(sortedNodes);
-
-    // Create nodes
-    sortedNodes.forEach((node, index) => {
+// Function to create nodes
+function createNodes(container, nodes) {
+    nodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
-        nodeEl.style.left = `${nodePositions[index].x}px`;
-        nodeEl.style.top = `${nodePositions[index].y}px`;
+
+        // Position nodes based on index
+        nodeEl.style.left = `${150 + index * 300}px`; 
+        nodeEl.style.top = `200px`;
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
@@ -57,7 +52,7 @@ function createNodes(container, nodes, links) {
             const colEl = document.createElement('li');
             colEl.innerText = col;
             colEl.addEventListener('click', () => {
-                toggleHighlight(node.id, col);
+                highlightLinks(node.id, col);
             });
             columnsEl.appendChild(colEl);
         });
@@ -68,69 +63,6 @@ function createNodes(container, nodes, links) {
         
         node.element = nodeEl; // Store the element reference
     });
-
-    // Redraw links after creating nodes
-    drawLinks();
-}
-
-// Function to sort nodes based on links to determine left-right positioning
-function sortNodesByLinks(nodes, links) {
-    const nodeMap = new Map(nodes.map(node => [node.id, node]));
-    const sortedNodes = [];
-
-    // Starting with nodes that are source only
-    const sourceNodes = nodes.filter(node => !links.some(link => link.target.node === node.id));
-    sourceNodes.forEach(node => {
-        sortedNodes.push(node);
-        addConnectedNodes(node.id, sortedNodes, links, nodeMap, 'target');
-    });
-
-    return sortedNodes;
-}
-
-// Recursive function to add connected nodes
-function addConnectedNodes(nodeId, sortedNodes, links, nodeMap, direction) {
-    const connectedLinks = links.filter(link => link[direction].node === nodeId);
-    connectedLinks.forEach(link => {
-        const connectedNode = nodeMap.get(link[direction === 'source' ? 'target' : 'source'].node);
-        if (!sortedNodes.includes(connectedNode)) {
-            sortedNodes.push(connectedNode);
-            addConnectedNodes(connectedNode.id, sortedNodes, links, nodeMap, direction);
-        }
-    });
-}
-
-// Function to calculate node positions
-function calculateNodePositions(nodes) {
-    const nodePositions = [];
-    const totalNodes = nodes.length;
-    const spacingY = 180;
-    const leftMargin = 50;
-    const rightMargin = 50;
-    const canvasHeight = window.innerHeight - 100; // Adjust as needed
-
-    const centerY = canvasHeight / 2;
-    const leftNodesCount = nodes.filter(node => !node.links.some(link => link.target === node.id)).length;
-    const rightNodesCount = totalNodes - leftNodesCount;
-
-    let leftIndex = 0;
-    let rightIndex = 0;
-
-    nodes.forEach((node, index) => {
-        if (!node.links.some(link => link.target === node.id)) {
-            // Node is a source node
-            const y = centerY - ((leftNodesCount - 1) / 2 - leftIndex) * spacingY;
-            nodePositions.push({ x: leftMargin, y: y });
-            leftIndex++;
-        } else {
-            // Node is a target node
-            const y = centerY - ((rightNodesCount - 1) / 2 - rightIndex) * spacingY;
-            nodePositions.push({ x: window.innerWidth - rightMargin, y: y });
-            rightIndex++;
-        }
-    });
-
-    return nodePositions;
 }
 
 // Create SVG links between nodes
@@ -179,22 +111,18 @@ function getElementCenter(element) {
     };
 }
 
-// Function to generate path data (curve)
+// Function to generate right-angle path data
 function generatePathData(source, target) {
-    const dx = target.x - source.x;
-    const dy = target.y - source.y;
-    const xOffset = dx * 0.6; // Adjust the curve intensity
-    const yOffset = dy * 0.6; // Adjust the curve intensity
-
-    // Bezier curve path
-    return `M${source.x},${source.y} C${source.x + xOffset},${source.y} ${target.x - xOffset},${target.y} ${target.x},${target.y}`;
+    const midX = (source.x + target.x) / 2;
+    return `M${source.x},${source.y} 
+            L${midX},${source.y} 
+            L${midX},${target.y} 
+            L${target.x},${target.y}`;
 }
 
-// Function to toggle highlight on column click
-function toggleHighlight(nodeId, columnName) {
-    const highlightedPaths = document.querySelectorAll('.line-highlight');
-    highlightedPaths.forEach(path => path.classList.remove('line-highlight'));
-
+// Function to highlight links
+function highlightLinks(nodeId, columnName) {
+    document.querySelectorAll('path').forEach(path => path.classList.remove('line-highlight'));
     data.links.forEach(link => {
         if ((link.source.node === nodeId && link.source.column === columnName) ||
             (link.target.node === nodeId && link.target.column === columnName)) {
@@ -204,58 +132,28 @@ function toggleHighlight(nodeId, columnName) {
                 ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
                 : sourceNode.element.querySelector('.node-title');
             const targetElement = targetNode.expanded
-                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
+                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
                 : targetNode.element.querySelector('.node-title');
             const sourcePos = getElementCenter(sourceElement);
             const targetPos = getElementCenter(targetElement);
             const pathData = generatePathData(sourcePos, targetPos);
-
-            const existingPath = d3.select('svg').selectAll('path')
-                .filter(function(d) {
-                    return d.source.node === link.source.node && d.source.column === link.source.column &&
-                           d.target.node === link.target.node && d.target.column === link.target.column;
-                });
-
-            if (existingPath.empty()) {
-                d3.select('svg').append("path")
-                    .attr("d", pathData)
-                    .attr("stroke", "orange")
-                    .attr("stroke-width", 4)
-                    .attr("fill", "none")
-                    .classed('line-highlight', true);
-            }
+            d3.select('svg').append("path")
+                .attr("d", pathData)
+                .attr("stroke", "orange")
+                .attr("stroke-width", 4)
+                .attr("fill", "none")
+                .classed('line-highlight', true);
         }
     });
 }
 
-// Center the lineage container and update node positions
+// Center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
     const totalHeight = data.nodes.length * 180; // Adjust based on node height and spacing
     const viewportHeight = window.innerHeight;
     const topOffset = (viewportHeight - totalHeight) / 2;
     container.style.top = `${topOffset}px`;
-
-    // Update node positions after centering
-    updateNodePositions();
-}
-
-// Function to update node positions
-function updateNodePositions() {
-    data.nodes.forEach((node, index) => {
-        const nodeEl = node.element;
-        if (index === 2) {
-            nodeEl.style.left = `50%`;
-            nodeEl.style.top = `50%`;
-            nodeEl.style.transform = `translate(-50%, -50%)`;
-        } else {
-            nodeEl.style.left = `50px`; // Position first two nodes to the left
-            nodeEl.style.top = `${50 + index * 180}px`; // Stack the first two nodes vertically
-        }
-    });
-
-    // Redraw links after updating node positions
-    drawLinks();
 }
 
 // Initialize
@@ -264,9 +162,5 @@ document.addEventListener("DOMContentLoaded", () => {
     createNodes(container, data.nodes);
     drawLinks();
     centerLineage();
-
-    // Recenter and update node positions on window resize
-    window.addEventListener('resize', () => {
-        centerLineage();
-    });
+    window.addEventListener('resize', centerLineage); // Recenter on window resize
 });
