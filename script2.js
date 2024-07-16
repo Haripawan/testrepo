@@ -13,13 +13,30 @@ const data = {
 
 // Function to create nodes
 function createNodes(container, nodes) {
-    nodes.forEach((node, index) => {
+    // Get the width of the container
+    const containerWidth = container.clientWidth;
+
+    // Separate nodes into source and target based on links
+    const sourceNodeIds = new Set(data.links.map(link => link.source.node));
+    const targetNodeIds = new Set(data.links.map(link => link.target.node));
+
+    let sourceIndex = 0;
+    let targetIndex = 0;
+
+    nodes.forEach(node => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
 
-        // Position nodes based on index
-        nodeEl.style.left = `${150 + index * 300}px`; 
-        nodeEl.style.top = `200px`;
+        // Position source nodes on the left and target nodes on the right
+        if (sourceNodeIds.has(node.id)) {
+            nodeEl.style.left = `50px`; // Left side for source nodes
+            nodeEl.style.top = `${50 + sourceIndex * 180}px`;
+            sourceIndex++;
+        } else if (targetNodeIds.has(node.id)) {
+            nodeEl.style.left = `${containerWidth - 200}px`; // Right side for target nodes
+            nodeEl.style.top = `${50 + targetIndex * 180}px`;
+            targetIndex++;
+        }
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
