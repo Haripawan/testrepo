@@ -14,8 +14,8 @@
         #lineage-container {
             position: absolute;
             top: 50px; /* Leave some space at the top */
-            left: 0;
-            right: 0;
+            left: 50px; /* Leave some space at the left */
+            right: 50px; /* Leave some space at the right */
             bottom: 50px; /* Leave some space at the bottom */
             overflow: auto;
         }
