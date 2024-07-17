@@ -182,25 +182,19 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
 
 // Event listeners for Expand All and Collapse All buttons
 document.getElementById('expand-all').addEventListener('click', () => {
-    fetch('data.json')
-        .then(response => response.json())
-        .then(data => {
-            data.nodes.forEach(node => {
-                node.expanded = true;
-            });
-            createNodesAndLinks(data);
-        });
+    const data = window.currentData;
+    data.nodes.forEach(node => {
+        node.expanded = true;
+    });
+    createNodesAndLinks(data);
 });
 
 document.getElementById('collapse-all').addEventListener('click', () => {
-    fetch('data.json')
-        .then(response => response.json())
-        .then(data => {
-            data.nodes.forEach(node => {
-                node.expanded = false;
-            });
-            createNodesAndLinks(data);
-        });
+    const data = window.currentData;
+    data.nodes.forEach(node => {
+        node.expanded = false;
+    });
+    createNodesAndLinks(data);
 });
 
 // Initialize
