@@ -12,3 +12,9 @@ Data Formatting:
 OLTP systems store transaction data in rows, optimizing performance for real-time use cases.
 OLAP systems organize data in multidimensional tables, making analytics more efficient1.
 In summary, Starburst is better suited for OLAP workloads, where analytics and multidimensional data analysis are essential1. If you have specific OLAP requirements, it’s a good choice! 😊🚀
+
+https://www.starburst.io/data-glossary/online-analytical-processing/
+
+https://docs.starburst.io/latest/overview/use-cases.html
+
+https://www.ibm.com/blog/olap-vs-oltp/
