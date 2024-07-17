@@ -22,6 +22,7 @@ function createNodesAndLinks(data) {
     const maxLevel = Math.max(...Object.values(nodeLevels));
 
     // Position nodes based on their hierarchical level
+    const nodePosition = {};
     data.nodes.forEach((node, index) => {
         const nodeEl = document.createElement('div');
         nodeEl.className = 'node';
@@ -29,8 +30,13 @@ function createNodesAndLinks(data) {
 
         // Position node
         const nodeLevel = nodeLevels[node.id];
+        if (!nodePosition[nodeLevel]) {
+            nodePosition[nodeLevel] = 0;
+        }
+        const nodeIndex = nodePosition[nodeLevel]++;
+        
         nodeEl.style.left = `${nodeLevel * horizontalSpacing}px`;
-        nodeEl.style.top = `${50 + (index % (maxLevel + 1)) * verticalSpacing}px`;
+        nodeEl.style.top = `${50 + nodeIndex * verticalSpacing}px`;
 
         const titleEl = document.createElement('div');
         titleEl.className = 'node-title';
@@ -138,8 +144,8 @@ function drawLinks(data, nodesMap) {
 function getElementCenter(element) {
     const rect = element.getBoundingClientRect();
     return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
+        x: rect.left + rect.width / 2 + window.scrollX,
+        y: rect.top + rect.height / 2 + window.scrollY
     };
 }
 
