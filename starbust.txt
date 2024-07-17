@@ -18,3 +18,11 @@ https://www.starburst.io/data-glossary/online-analytical-processing/
 https://docs.starburst.io/latest/overview/use-cases.html
 
 https://www.ibm.com/blog/olap-vs-oltp/
+
+Certainly! Starburst Data Virtualization is a powerful tool that enables data virtualization and federation at an enterprise scale. Here are some key points about it:
+Purpose: Starburst allows you to leave your data in place while making it more accessible and productive. It defines a semantic layer, enabling the use of standard ANSI SQL across various data sourcesAd1.
+Capabilities:
+Fast Analytics Engine: Starburst provides efficient analytics for data warehouses, data lakes, or data meshes.
+Distributed Data Access: It unlocks the value of distributed data, making it easy to access regardless of where it resides.
+Cross-Database Queries: Starburst can query data across any database, making it actionable for data-driven organizations2.
+In summary, Starburst Data Virtualization is well-suited for OLAP workloads, analytics, and efficient data access across diverse sources. If you have specific use cases, it’s worth exploring further! 
