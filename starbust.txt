@@ -1,0 +1,14 @@
+Starburst is better suited for OLAP (Online Analytical Processing) workloads rather than OLTP (Online Transaction Processing). Let me explain the differences:
+Purpose and Users:
+OLTP systems handle high volumes of transactional data for fast retrieval and updating. For example, a bank’s financial transactions must be processed quickly and accurately, often at rates of thousands of transactions per second.
+OLAP systems, on the other hand, focus on analytics by combining multidimensional historical data from various sources. For instance, a dashboard might summarize performance metrics by combining revenue, location, and time dimensions. Complex queries, such as those used in machine learning projects, can involve thousands of dimensions1.
+Data Architecture:
+OLTP systems use relational databases, emphasizing fast read and write speeds. They guarantee reliability through ACID compliance.
+OLAP systems prioritize read performance over write speeds. They store data in multidimensional tables optimized for efficient queries1.
+Data Sources:
+OLTP systems handle separate applications with dedicated relational databases (e.g., financial, inventory, and activity logging systems).
+OLAP systems (like data warehouses) source data from various enterprise systems, providing holistic views for decision-makers1.
+Data Formatting:
+OLTP systems store transaction data in rows, optimizing performance for real-time use cases.
+OLAP systems organize data in multidimensional tables, making analytics more efficient1.
+In summary, Starburst is better suited for OLAP workloads, where analytics and multidimensional data analysis are essential1. If you have specific OLAP requirements, it’s a good choice! 😊🚀
