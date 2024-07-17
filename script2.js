@@ -67,10 +67,16 @@ function createNodesAndLinks(data) {
         columnsEl.style.display = node.expanded ? 'block' : 'none';
         node.columns.forEach(col => {
             const colEl = document.createElement('li');
+            colEl.className = 'node-column';
             colEl.innerText = col;
             colEl.addEventListener('click', () => {
                 highlightLinks(node.id, col, data, nodesMap);
             });
+
+            const dotEl = document.createElement('span');
+            dotEl.className = 'column-dot';
+            colEl.appendChild(dotEl);
+
             columnsEl.appendChild(colEl);
         });
 
@@ -116,15 +122,18 @@ function drawLinks(data, nodesMap) {
         const targetNode = data.nodes.find(n => n.id === link.target.node);
 
         const sourceElement = sourceNode.expanded
-            ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
+            ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText.includes(link.source.column))
             : sourceNode.element.querySelector('.node-title');
         
         const targetElement = targetNode.expanded
-            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
+            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText.includes(link.target.column))
             : targetNode.element.querySelector('.node-title');
 
-        const sourcePos = getElementCenter(sourceElement);
-        const targetPos = getElementCenter(targetElement);
+        const sourceDot = sourceElement.querySelector('.column-dot');
+        const targetDot = targetElement.querySelector('.column-dot');
+
+        const sourcePos = getElementCenter(sourceDot);
+        const targetPos = getElementCenter(targetDot);
 
         const pathData = generatePathData(sourcePos, targetPos);
 
@@ -167,13 +176,15 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
             const sourceNode = data.nodes.find(n => n.id === link.source.node);
             const targetNode = data.nodes.find(n => n.id === link.target.node);
             const sourceElement = sourceNode.expanded
-                ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
+                ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText.includes(link.source.column))
                 : sourceNode.element.querySelector('.node-title');
             const targetElement = targetNode.expanded
-                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
+                ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText.includes(link.target.column))
                 : targetNode.element.querySelector('.node-title');
-            const sourcePos = getElementCenter(sourceElement);
-            const targetPos = getElementCenter(targetElement);
+            const sourceDot = sourceElement.querySelector('.column-dot');
+            const targetDot = targetElement.querySelector('.column-dot');
+            const sourcePos = getElementCenter(sourceDot);
+            const targetPos = getElementCenter(targetDot);
             const pathData = generatePathData(sourcePos, targetPos);
             d3.select('svg').append("path")
                 .attr("d", pathData)
