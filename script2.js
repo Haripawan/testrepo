@@ -3,6 +3,7 @@ function fetchDataAndInitialize() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
+            window.currentData = data; // Store the data globally for expand/collapse functionality
             createNodesAndLinks(data);
         })
         .catch(error => console.error('Error loading JSON data:', error));
@@ -11,6 +12,8 @@ function fetchDataAndInitialize() {
 // Function to create nodes and links
 function createNodesAndLinks(data) {
     const container = document.getElementById('lineage-container');
+    container.innerHTML = ''; // Clear previous nodes
+
     const containerWidth = container.clientWidth;
 
     const horizontalSpacing = 300; // Adjust horizontal spacing
@@ -34,7 +37,7 @@ function createNodesAndLinks(data) {
             nodePosition[nodeLevel] = 0;
         }
         const nodeIndex = nodePosition[nodeLevel]++;
-        
+
         nodeEl.style.left = `${nodeLevel * horizontalSpacing}px`;
         nodeEl.style.top = `${50 + nodeIndex * verticalSpacing}px`;
 
@@ -44,7 +47,7 @@ function createNodesAndLinks(data) {
 
         const actionsEl = document.createElement('div');
         actionsEl.className = 'actions';
-        
+
         const collapseExpandEl = document.createElement('span');
         collapseExpandEl.innerText = node.expanded ? '-' : '+';
         collapseExpandEl.addEventListener('click', () => {
@@ -72,11 +75,12 @@ function createNodesAndLinks(data) {
         nodeEl.appendChild(titleEl);
         nodeEl.appendChild(columnsEl);
         container.appendChild(nodeEl);
-        
+
         node.element = nodeEl; // Store the element reference
     });
 
     drawLinks(data, nodesMap);
+    centerLineage();
 }
 
 // Function to calculate the levels of each node
@@ -100,11 +104,12 @@ function calculateNodeLevels(links) {
 
 // Function to create SVG links between nodes
 function drawLinks(data, nodesMap) {
-    const svg = d3.select("#svgContainer");
-    svg.selectAll("*").remove(); // Clear previous links
+    const svgContainer = document.getElementById('svgContainer');
+    svgContainer.innerHTML = ''; // Clear previous links
 
-    // Clear previous highlights
-    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+    const svg = d3.select("#svgContainer").append("svg")
+        .attr("width", svgContainer.clientWidth)
+        .attr("height", svgContainer.clientHeight);
 
     data.links.forEach(link => {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
@@ -113,7 +118,7 @@ function drawLinks(data, nodesMap) {
         const sourceElement = sourceNode.expanded
             ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
             : sourceNode.element.querySelector('.node-title');
-        
+
         const targetElement = targetNode.expanded
             ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
             : targetNode.element.querySelector('.node-title');
@@ -128,10 +133,6 @@ function drawLinks(data, nodesMap) {
             .attr("stroke", "black")
             .attr("stroke-width", 2)
             .attr("fill", "none");
-
-        // Highlight columns involved in the linkage
-        if (sourceNode.expanded) sourceElement.classList.add('highlight');
-        if (targetNode.expanded) targetElement.classList.add('highlight');
     });
 }
 
@@ -197,5 +198,20 @@ document.getElementById('collapse-all').addEventListener('click', () => {
     createNodesAndLinks(data);
 });
 
+// Function to center the lineage visualization
+function centerLineage() {
+    const container = document.getElementById('lineage-container');
+    const totalHeight = container.scrollHeight;
+    const totalWidth = container.scrollWidth;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const topOffset = (viewportHeight - totalHeight) / 2;
+    const leftOffset = (viewportWidth - totalWidth) / 2;
+    container.style.position = 'absolute';
+    container.style.top = `${topOffset}px`;
+    container.style.left = `${leftOffset}px`;
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", fetchDataAndInitialize);
+window.addEventListener('resize', centerLineage);
