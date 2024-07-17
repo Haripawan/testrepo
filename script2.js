@@ -54,12 +54,7 @@ function createNodesAndLinks(data) {
             drawLinks(data, nodesMap);
         });
 
-        const lineageEl = document.createElement('span');
-        lineageEl.innerText = '→';
-        // Implement lineage click action if needed
-
         actionsEl.appendChild(collapseExpandEl);
-        actionsEl.appendChild(lineageEl);
         titleEl.appendChild(actionsEl);
 
         const columnsEl = document.createElement('ul');
@@ -82,25 +77,6 @@ function createNodesAndLinks(data) {
     });
 
     drawLinks(data, nodesMap);
-
-    // Event listeners for Expand All and Collapse All buttons
-    document.getElementById('expand-all').addEventListener('click', () => {
-        data.nodes.forEach(node => {
-            node.expanded = true;
-            node.element.querySelector('.node-columns').style.display = 'block';
-            node.element.querySelector('.actions span').innerText = '-';
-        });
-        drawLinks(data, nodesMap);
-    });
-
-    document.getElementById('collapse-all').addEventListener('click', () => {
-        data.nodes.forEach(node => {
-            node.expanded = false;
-            node.element.querySelector('.node-columns').style.display = 'none';
-            node.element.querySelector('.actions span').innerText = '+';
-        });
-        drawLinks(data, nodesMap);
-    });
 }
 
 // Function to calculate the levels of each node
@@ -203,6 +179,29 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
         }
     });
 }
+
+// Event listeners for Expand All and Collapse All buttons
+document.getElementById('expand-all').addEventListener('click', () => {
+    fetch('data.json')
+        .then(response => response.json())
+        .then(data => {
+            data.nodes.forEach(node => {
+                node.expanded = true;
+            });
+            createNodesAndLinks(data);
+        });
+});
+
+document.getElementById('collapse-all').addEventListener('click', () => {
+    fetch('data.json')
+        .then(response => response.json())
+        .then(data => {
+            data.nodes.forEach(node => {
+                node.expanded = false;
+            });
+            createNodesAndLinks(data);
+        });
+});
 
 // Initialize
 document.addEventListener("DOMContentLoaded", fetchDataAndInitialize);
