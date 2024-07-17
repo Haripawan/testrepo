@@ -1,58 +1,55 @@
-body {
-    font-family: Arial, sans-serif;
-}
-
-#lineage-container {
-    position: relative;
+#svgContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100vh;
-    overflow: hidden;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .node {
     position: absolute;
-    width: 150px;
+    width: 180px;
     padding: 10px;
-    border: 1px solid #ccc;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
 }
 
 .node-title {
-    background-color: lightbrown;
-    padding: 5px;
     font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 5px;
 }
 
 .actions {
-    display: flex;
-    gap: 5px;
+    float: right;
 }
 
 .node-columns {
-    list-style-type: none;
+    list-style: none;
     padding: 0;
     margin: 0;
-    background-color: lightblue;
 }
 
 .node-columns li {
-    padding: 5px;
     cursor: pointer;
-}
-
-.node-columns li:hover {
-    background-color: #ddd;
+    margin: 3px 0;
 }
 
 .highlight {
-    background-color: yellow !important;
+    background-color: #d1ecf1;
 }
 
 .line-highlight {
     stroke: orange !important;
     stroke-width: 4 !important;
+}
+
+#container {
+    padding-top: 20px; /* Space above */
+    padding-bottom: 20px; /* Space below */
+    overflow-y: auto; /* Make it scrollable */
 }
