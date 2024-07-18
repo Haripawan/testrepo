@@ -16,7 +16,7 @@ function createNodesAndLinks(data) {
 
     const containerWidth = container.clientWidth;
 
-    const horizontalSpacing = 300; // Adjust horizontal spacing
+    const horizontalSpacing = containerWidth / (Math.max(...calculateNodeLevels(data.links)) + 1); // Adjust horizontal spacing dynamically
     const verticalSpacing = 180; // Adjust vertical spacing
     const nodesMap = new Map();
 
@@ -107,9 +107,12 @@ function drawLinks(data, nodesMap) {
     const svgContainer = document.getElementById('svgContainer');
     svgContainer.innerHTML = ''; // Clear previous links
 
+    const svgWidth = document.getElementById('lineage-container').scrollWidth;
+    const svgHeight = document.getElementById('lineage-container').scrollHeight;
+
     const svg = d3.select("#svgContainer").append("svg")
-        .attr("width", svgContainer.clientWidth)
-        .attr("height", svgContainer.clientHeight);
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
 
     data.links.forEach(link => {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
