@@ -15,7 +15,6 @@ function fetchDataAndInitialize() {
 function createNodesAndLinks(data) {
     const container = document.getElementById('lineage-container');
     container.innerHTML = ''; // Clear previous content
-    const containerWidth = container.clientWidth;
 
     const horizontalSpacing = 300; // Adjust horizontal spacing
     const verticalSpacing = 180; // Adjust vertical spacing
@@ -118,6 +117,11 @@ function drawLinks(data, nodesMap) {
         const sourceNode = data.nodes.find(n => n.id === link.source.node);
         const targetNode = data.nodes.find(n => n.id === link.target.node);
 
+        if (!sourceNode || !targetNode) {
+            console.error('Invalid link:', link);
+            return;
+        }
+
         const sourceElement = sourceNode.expanded
             ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
             : sourceNode.element.querySelector('.node-title');
@@ -125,6 +129,11 @@ function drawLinks(data, nodesMap) {
         const targetElement = targetNode.expanded
             ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
             : targetNode.element.querySelector('.node-title');
+
+        if (!sourceElement || !targetElement) {
+            console.error('Invalid source/target element for link:', link);
+            return;
+        }
 
         const sourcePos = getElementCenter(sourceElement);
         const targetPos = getElementCenter(targetElement);
@@ -184,37 +193,50 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
     });
 }
 
-// Function to center the lineage container
+// Function to center the lineage visualization
 function centerLineage() {
     const container = document.getElementById('lineage-container');
-    const totalHeight = container.scrollHeight;
-    const totalWidth = container.scrollWidth;
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const topOffset = (viewportHeight - totalHeight) / 2;
-    const leftOffset = (viewportWidth - totalWidth) / 2;
-    container.style.position = 'absolute';
-    container.style.top = `${topOffset}px`;
-    container.style.left = `${leftOffset}px`;
+    const boundingRect = container.getBoundingClientRect();
+    const offsetX = (window.innerWidth - boundingRect.width) / 2 - boundingRect.left;
+    const offsetY = (window.innerHeight - boundingRect.height) / 2 - boundingRect.top;
+    container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+}
+
+// Function to expand all nodes
+function expandAll() {
+    const data = window.currentData;
+    data.nodes.forEach(node => node.expanded = true);
+    createNodesAndLinks(data);
+}
+
+// Function to collapse all nodes
+function collapseAll() {
+    const data = window.currentData;
+    data.nodes.forEach(node => node.expanded = false);
+    createNodesAndLinks(data);
+}
+
+// Function to toggle the sidebar menu
+function toggleMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('open');
+}
+
+// Function to show the lineage page
+function showPage(pageId) {
+    const pages = document.querySelectorAll('.content > div');
+    pages.forEach(page => {
+        if (page.id === pageId) {
+            page.style.display = 'block';
+        } else {
+            page.style.display = 'none';
+        }
+    });
 }
 
 // Initialize
-document.addEventListener("DOMContentLoaded", fetchDataAndInitialize);
-
-// Expand all nodes
-document.getElementById('expand-all').addEventListener('click', () => {
-    const data = window.currentData;
-    data.nodes.forEach(node => {
-        node.expanded = true;
-    });
-    createNodesAndLinks(data);
-});
-
-// Collapse all nodes
-document.getElementById('collapse-all').addEventListener('click', () => {
-    const data = window.currentData;
-    data.nodes.forEach(node => {
-        node.expanded = false;
-    });
-    createNodesAndLinks(data);
+document.addEventListener("DOMContentLoaded", () => {
+    fetchDataAndInitialize();
+    document.getElementById('expand-all').addEventListener('click', expandAll);
+    document.getElementById('collapse-all').addEventListener('click', collapseAll);
 });
