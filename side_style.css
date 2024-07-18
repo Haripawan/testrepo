@@ -1,0 +1,131 @@
+body {
+    display: flex;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.sidebar {
+    width: 250px;
+    background: #333;
+    color: white;
+    height: 100vh;
+    position: fixed;
+    overflow: auto;
+    transition: width 0.3s;
+}
+
+.sidebar .menu {
+    display: none;
+}
+
+.sidebar .menu-toggle {
+    background: #333;
+    border: none;
+    color: white;
+    font-size: 24px;
+    padding: 15px;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar.open .menu {
+    display: block;
+}
+
+.sidebar.open {
+    width: 250px;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    padding: 15px;
+    border-bottom: 1px solid #444;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+.content {
+    margin-left: 250px;
+    padding: 20px;
+    width: calc(100% - 250px);
+    transition: margin-left 0.3s, width 0.3s;
+}
+
+.content .header {
+    background: blue;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.content .header img {
+    max-height: 50px;
+    vertical-align: middle;
+}
+
+#button-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+#page-content {
+    position: relative;
+}
+
+#svgContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.node {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.node-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.node-columns {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.node-columns li {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.node-columns li:hover {
+    background-color: #ddd;
+}
+
+.actions {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.highlight {
+    background-color: yellow;
+}
+
+.line-highlight {
+    stroke: orange !important;
+    stroke-width: 4 !important;
+}
