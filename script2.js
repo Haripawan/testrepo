@@ -3,8 +3,10 @@ function fetchDataAndInitialize() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
-            window.currentData = data; // Store the data globally for expand/collapse functionality
+            window.currentData = data; // Store data globally for expand/collapse functions
             createNodesAndLinks(data);
+            centerLineage();
+            window.addEventListener('resize', centerLineage); // Recenter on window resize
         })
         .catch(error => console.error('Error loading JSON data:', error));
 }
@@ -12,11 +14,10 @@ function fetchDataAndInitialize() {
 // Function to create nodes and links
 function createNodesAndLinks(data) {
     const container = document.getElementById('lineage-container');
-    container.innerHTML = ''; // Clear previous nodes
-
+    container.innerHTML = ''; // Clear previous content
     const containerWidth = container.clientWidth;
 
-    const horizontalSpacing = containerWidth / (Math.max(...calculateNodeLevels(data.links)) + 1); // Adjust horizontal spacing dynamically
+    const horizontalSpacing = 300; // Adjust horizontal spacing
     const verticalSpacing = 180; // Adjust vertical spacing
     const nodesMap = new Map();
 
@@ -37,7 +38,7 @@ function createNodesAndLinks(data) {
             nodePosition[nodeLevel] = 0;
         }
         const nodeIndex = nodePosition[nodeLevel]++;
-
+        
         nodeEl.style.left = `${nodeLevel * horizontalSpacing}px`;
         nodeEl.style.top = `${50 + nodeIndex * verticalSpacing}px`;
 
@@ -47,7 +48,7 @@ function createNodesAndLinks(data) {
 
         const actionsEl = document.createElement('div');
         actionsEl.className = 'actions';
-
+        
         const collapseExpandEl = document.createElement('span');
         collapseExpandEl.innerText = node.expanded ? '-' : '+';
         collapseExpandEl.addEventListener('click', () => {
@@ -75,12 +76,11 @@ function createNodesAndLinks(data) {
         nodeEl.appendChild(titleEl);
         nodeEl.appendChild(columnsEl);
         container.appendChild(nodeEl);
-
+        
         node.element = nodeEl; // Store the element reference
     });
 
     drawLinks(data, nodesMap);
-    centerLineage();
 }
 
 // Function to calculate the levels of each node
@@ -104,13 +104,13 @@ function calculateNodeLevels(links) {
 
 // Function to create SVG links between nodes
 function drawLinks(data, nodesMap) {
-    const svgContainer = document.getElementById('svgContainer');
-    svgContainer.innerHTML = ''; // Clear previous links
+    const svgContainer = d3.select("#svgContainer");
+    svgContainer.selectAll("*").remove(); // Clear previous links
 
     const svgWidth = document.getElementById('lineage-container').scrollWidth;
     const svgHeight = document.getElementById('lineage-container').scrollHeight;
 
-    const svg = d3.select("#svgContainer").append("svg")
+    const svg = svgContainer.append("svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight);
 
@@ -121,9 +121,9 @@ function drawLinks(data, nodesMap) {
         const sourceElement = sourceNode.expanded
             ? Array.from(sourceNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.source.column)
             : sourceNode.element.querySelector('.node-title');
-
+        
         const targetElement = targetNode.expanded
-            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')). find(el => el.innerText === link.target.column)
+            ? Array.from(targetNode.element.querySelectorAll('.node-columns li')).find(el => el.innerText === link.target.column)
             : targetNode.element.querySelector('.node-title');
 
         const sourcePos = getElementCenter(sourceElement);
@@ -184,24 +184,7 @@ function highlightLinks(nodeId, columnName, data, nodesMap) {
     });
 }
 
-// Event listeners for Expand All and Collapse All buttons
-document.getElementById('expand-all').addEventListener('click', () => {
-    const data = window.currentData;
-    data.nodes.forEach(node => {
-        node.expanded = true;
-    });
-    createNodesAndLinks(data);
-});
-
-document.getElementById('collapse-all').addEventListener('click', () => {
-    const data = window.currentData;
-    data.nodes.forEach(node => {
-        node.expanded = false;
-    });
-    createNodesAndLinks(data);
-});
-
-// Function to center the lineage visualization
+// Function to center the lineage container
 function centerLineage() {
     const container = document.getElementById('lineage-container');
     const totalHeight = container.scrollHeight;
@@ -217,4 +200,21 @@ function centerLineage() {
 
 // Initialize
 document.addEventListener("DOMContentLoaded", fetchDataAndInitialize);
-window.addEventListener('resize', centerLineage);
+
+// Expand all nodes
+document.getElementById('expand-all').addEventListener('click', () => {
+    const data = window.currentData;
+    data.nodes.forEach(node => {
+        node.expanded = true;
+    });
+    createNodesAndLinks(data);
+});
+
+// Collapse all nodes
+document.getElementById('collapse-all').addEventListener('click', () => {
+    const data = window.currentData;
+    data.nodes.forEach(node => {
+        node.expanded = false;
+    });
+    createNodesAndLinks(data);
+});
