@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Curved Line Connector</title>
+    <title>Curved Line Connector with Draggable Objects</title>
     <style>
         body {
             display: flex;
@@ -18,6 +18,10 @@
             height: 100px;
             background-color: lightblue;
             position: absolute;
+            cursor: grab;
+        }
+        .object:active {
+            cursor: grabbing;
         }
         #obj1 {
             left: 20%;
@@ -60,9 +64,34 @@
             document.getElementById('curve').setAttribute('d', path);
         }
 
+        function makeDraggable(element) {
+            let offsetX, offsetY;
+
+            element.addEventListener('mousedown', (e) => {
+                offsetX = e.clientX - element.getBoundingClientRect().left;
+                offsetY = e.clientY - element.getBoundingClientRect().top;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                element.style.left = `${e.clientX - offsetX}px`;
+                element.style.top = `${e.clientY - offsetY}px`;
+                updateCurve();
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+        }
+
         window.addEventListener('resize', updateCurve);
-        window.addEventListener('load', updateCurve);
-        window.addEventListener('mousemove', updateCurve); // Optional: update on mouse move for interactive demo
+        window.addEventListener('load', () => {
+            updateCurve();
+            makeDraggable(document.getElementById('obj1'));
+            makeDraggable(document.getElementById('obj2'));
+        });
     </script>
 </body>
 </html>
