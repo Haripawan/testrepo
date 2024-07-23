@@ -1,120 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Draggable Objects with Curved Lines</title>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <head>
+    <meta charset="utf-8">
+
+    <title>Collapsible Tree Example</title>
+
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .container {
-            width: 80%;
-            height: 80%;
-            border: 2px solid black;
-            position: relative;
-        }
-        .object {
-            width: 150px;
-            height: 200px;
-            background-color: lightblue;
-            position: absolute;
-            cursor: grab;
-        }
-        .field {
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid gray;
-        }
-        #obj1 {
-            left: 10%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #obj2 {
-            right: 10%;
-            top: 50%;
-            transform: translate(50%, -50%);
-        }
-        svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Allows click events to pass through the SVG */
-        }
+
+ .node circle {
+   fill: #fff;
+   stroke: steelblue;
+   stroke-width: 3px;
+ }
+
+ .node text { font: 12px sans-serif; }
+
+ .link {
+   fill: none;
+   stroke: #ccc;
+   stroke-width: 2px;
+ }
+ 
     </style>
-</head>
-<body>
-    <div class="container">
-        <div id="obj1" class="object">
-            <div class="field" id="field1-1">Field 1-1</div>
-            <div class="field" id="field1-2">Field 1-2</div>
-            <div class="field" id="field1-3">Field 1-3</div>
-        </div>
-        <div id="obj2" class="object">
-            <div class="field" id="field2-1">Field 2-1</div>
-            <div class="field" id="field2-2">Field 2-2</div>
-            <div class="field" id="field2-3">Field 2-3</div>
-        </div>
-        <svg>
-            <path id="curve1" stroke="black" stroke-width="2" fill="none"/>
-            <path id="curve2" stroke="black" stroke-width="2" fill="none"/>
-            <path id="curve3" stroke="black" stroke-width="2" fill="none"/>
-        </svg>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    <script>
-        function updateCurves() {
-            const fields1 = [
-                $('#field1-1')[0].getBoundingClientRect(),
-                $('#field1-2')[0].getBoundingClientRect(),
-                $('#field1-3')[0].getBoundingClientRect()
-            ];
-            const fields2 = [
-                $('#field2-1')[0].getBoundingClientRect(),
-                $('#field2-2')[0].getBoundingClientRect(),
-                $('#field2-3')[0].getBoundingClientRect()
-            ];
 
-            fields1.forEach((field1, index) => {
-                const field2 = fields2[index];
-                const x1 = field1.left + field1.width / 2;
-                const y1 = field1.top + field1.height / 2;
-                const x2 = field2.left + field2.width / 2;
-                const y2 = field2.top + field2.height / 2;
+  </head>
 
-                const path = `M${x1},${y1} C${(x1 + x2) / 2},${y1 - 50} ${(x1 + x2) / 2},${y2 + 50} ${x2},${y2}`;
-                
-                $(`#curve${index + 1}`).attr('d', path);
-            });
-        }
+  <body>
 
-        function makeDraggable(element) {
-            element.draggable({
-                containment: ".container",
-                drag: updateCurves
-            });
-        }
+<!-- load the d3.js library --> 
+<script src="http://d3js.org/d3.v3.min.js"></script>
+ 
+<script>
 
-        $(window).on('resize', updateCurves);
+var treeData = [
+  {
+    "name": "Top Level",
+    "parent": "null",
+    "children": [
+      {
+        "name": "Level 2: A",
+        "parent": "Top Level",
+        "children": [
+          {
+            "name": "Son of A",
+            "parent": "Level 2: A"
+          },
+          {
+            "name": "Daughter of A",
+            "parent": "Level 2: A"
+          }
+        ]
+      },
+      {
+        "name": "Level 2: B",
+        "parent": "Top Level"
+      }
+    ]
+  }
+];
 
-        $(window).on('load', function() {
-            updateCurves();
-            makeDraggable($('#obj1'));
-            makeDraggable($('#obj2'));
-        });
-    </script>
-</body>
+// ************** Generate the tree diagram  *****************
+var margin = {top: 20, right: 120, bottom: 20, left: 120},
+ width = 960 - margin.right - margin.left,
+ height = 500 - margin.top - margin.bottom;
+ 
+var i = 0;
+
+var tree = d3.layout.tree()
+ .size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+ .projection(function(d) { return [d.y, d.x]; });
+
+var svg = d3.select("body").append("svg")
+ .attr("width", width + margin.right + margin.left)
+ .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+ .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+root = treeData[0];
+  
+update(root);
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+   links = tree.links(nodes);
+
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Declare the nodesâ€¦
+  var node = svg.selectAll("g.node")
+   .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  // Enter the nodes.
+  var nodeEnter = node.enter().append("g")
+   .attr("class", "node")
+   .attr("transform", function(d) { 
+    return "translate(" + d.y + "," + d.x + ")"; });
+
+  nodeEnter.append("circle")
+   .attr("r", 10)
+   .style("fill", "#fff");
+
+  nodeEnter.append("text")
+   .attr("x", function(d) { 
+    return d.children || d._children ? -13 : 13; })
+   .attr("dy", ".35em")
+   .attr("text-anchor", function(d) { 
+    return d.children || d._children ? "end" : "start"; })
+   .text(function(d) { return d.name; })
+   .style("fill-opacity", 1);
+
+  // Declare the linksâ€¦
+  var link = svg.selectAll("path.link")
+   .data(links, function(d) { return d.target.id; });
+
+  // Enter the links.
+  link.enter().insert("path", "g")
+   .attr("class", "link")
+   .attr("d", diagonal);
+
+}
+
+</script>
+ 
+  </body>
 </html>
+
+
+//http://www.d3noob.org/2014/01/tree-diagrams-in-d3js_11.html?m=1
