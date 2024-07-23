@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Draggable Objects with Curved Lines</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
         body {
             display: flex;
@@ -26,9 +27,6 @@
             background-color: lightblue;
             position: absolute;
             cursor: grab;
-        }
-        .object:active {
-            cursor: grabbing;
         }
         .field {
             height: 50px;
@@ -75,17 +73,19 @@
             <path id="curve3" stroke="black" stroke-width="2" fill="none"/>
         </svg>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script>
         function updateCurves() {
             const fields1 = [
-                document.getElementById('field1-1').getBoundingClientRect(),
-                document.getElementById('field1-2').getBoundingClientRect(),
-                document.getElementById('field1-3').getBoundingClientRect()
+                $('#field1-1')[0].getBoundingClientRect(),
+                $('#field1-2')[0].getBoundingClientRect(),
+                $('#field1-3')[0].getBoundingClientRect()
             ];
             const fields2 = [
-                document.getElementById('field2-1').getBoundingClientRect(),
-                document.getElementById('field2-2').getBoundingClientRect(),
-                document.getElementById('field2-3').getBoundingClientRect()
+                $('#field2-1')[0].getBoundingClientRect(),
+                $('#field2-2')[0].getBoundingClientRect(),
+                $('#field2-3')[0].getBoundingClientRect()
             ];
 
             fields1.forEach((field1, index) => {
@@ -97,47 +97,23 @@
 
                 const path = `M${x1},${y1} C${(x1 + x2) / 2},${y1 - 50} ${(x1 + x2) / 2},${y2 + 50} ${x2},${y2}`;
                 
-                document.getElementById(`curve${index + 1}`).setAttribute('d', path);
+                $(`#curve${index + 1}`).attr('d', path);
             });
         }
 
-        function makeDraggable(element, container) {
-            let offsetX, offsetY;
-
-            element.addEventListener('mousedown', (e) => {
-                offsetX = e.clientX - element.getBoundingClientRect().left;
-                offsetY = e.clientY - element.getBoundingClientRect().top;
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
+        function makeDraggable(element) {
+            element.draggable({
+                containment: ".container",
+                drag: updateCurves
             });
-
-            function onMouseMove(e) {
-                const containerRect = container.getBoundingClientRect();
-                const elementRect = element.getBoundingClientRect();
-                let newX = e.clientX - offsetX;
-                let newY = e.clientY - offsetY;
-
-                // Boundaries
-                newX = Math.max(containerRect.left, Math.min(newX, containerRect.right - elementRect.width));
-                newY = Math.max(containerRect.top, Math.min(newY, containerRect.bottom - elementRect.height));
-
-                element.style.left = `${newX}px`;
-                element.style.top = `${newY}px`;
-                updateCurves();
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            }
         }
 
-        window.addEventListener('resize', updateCurves);
-        window.addEventListener('load', () => {
+        $(window).on('resize', updateCurves);
+
+        $(window).on('load', function() {
             updateCurves();
-            const container = document.querySelector('.container');
-            makeDraggable(document.getElementById('obj1'), container);
-            makeDraggable(document.getElementById('obj2'), container);
+            makeDraggable($('#obj1'));
+            makeDraggable($('#obj2'));
         });
     </script>
 </body>
