@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curved Line Connector</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            position: relative;
+        }
+        .object {
+            width: 100px;
+            height: 100px;
+            background-color: lightblue;
+            position: absolute;
+        }
+        #obj1 {
+            left: 20%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #obj2 {
+            left: 80%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows click events to pass through the SVG */
+        }
+    </style>
+</head>
+<body>
+    <div id="obj1" class="object"></div>
+    <div id="obj2" class="object"></div>
+    <svg>
+        <path id="curve" stroke="black" stroke-width="2" fill="none"/>
+    </svg>
+    <script>
+        function updateCurve() {
+            const obj1 = document.getElementById('obj1').getBoundingClientRect();
+            const obj2 = document.getElementById('obj2').getBoundingClientRect();
+            
+            const x1 = obj1.left + obj1.width / 2;
+            const y1 = obj1.top + obj1.height / 2;
+            const x2 = obj2.left + obj2.width / 2;
+            const y2 = obj2.top + obj2.height / 2;
+
+            const path = `M${x1},${y1} C${(x1 + x2) / 2},${y1 - 100} ${(x1 + x2) / 2},${y2 + 100} ${x2},${y2}`;
+            
+            document.getElementById('curve').setAttribute('d', path);
+        }
+
+        window.addEventListener('resize', updateCurve);
+        window.addEventListener('load', updateCurve);
+        window.addEventListener('mousemove', updateCurve); // Optional: update on mouse move for interactive demo
+    </script>
+</body>
+</html>
