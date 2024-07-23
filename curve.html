@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Curved Line Connector with Draggable Objects</title>
+    <title>Draggable Objects with Curved Lines</title>
     <style>
         body {
             display: flex;
@@ -12,10 +12,17 @@
             height: 100vh;
             margin: 0;
             position: relative;
+            overflow: hidden;
+        }
+        .container {
+            width: 80%;
+            height: 80%;
+            border: 2px solid black;
+            position: relative;
         }
         .object {
-            width: 100px;
-            height: 100px;
+            width: 150px;
+            height: 200px;
             background-color: lightblue;
             position: absolute;
             cursor: grab;
@@ -23,15 +30,22 @@
         .object:active {
             cursor: grabbing;
         }
+        .field {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid gray;
+        }
         #obj1 {
-            left: 20%;
+            left: 10%;
             top: 50%;
             transform: translate(-50%, -50%);
         }
         #obj2 {
-            left: 80%;
+            right: 10%;
             top: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(50%, -50%);
         }
         svg {
             position: absolute;
@@ -44,27 +58,50 @@
     </style>
 </head>
 <body>
-    <div id="obj1" class="object"></div>
-    <div id="obj2" class="object"></div>
-    <svg>
-        <path id="curve" stroke="black" stroke-width="2" fill="none"/>
-    </svg>
+    <div class="container">
+        <div id="obj1" class="object">
+            <div class="field" id="field1-1">Field 1-1</div>
+            <div class="field" id="field1-2">Field 1-2</div>
+            <div class="field" id="field1-3">Field 1-3</div>
+        </div>
+        <div id="obj2" class="object">
+            <div class="field" id="field2-1">Field 2-1</div>
+            <div class="field" id="field2-2">Field 2-2</div>
+            <div class="field" id="field2-3">Field 2-3</div>
+        </div>
+        <svg>
+            <path id="curve1" stroke="black" stroke-width="2" fill="none"/>
+            <path id="curve2" stroke="black" stroke-width="2" fill="none"/>
+            <path id="curve3" stroke="black" stroke-width="2" fill="none"/>
+        </svg>
+    </div>
     <script>
-        function updateCurve() {
-            const obj1 = document.getElementById('obj1').getBoundingClientRect();
-            const obj2 = document.getElementById('obj2').getBoundingClientRect();
-            
-            const x1 = obj1.left + obj1.width / 2;
-            const y1 = obj1.top + obj1.height / 2;
-            const x2 = obj2.left + obj2.width / 2;
-            const y2 = obj2.top + obj2.height / 2;
+        function updateCurves() {
+            const fields1 = [
+                document.getElementById('field1-1').getBoundingClientRect(),
+                document.getElementById('field1-2').getBoundingClientRect(),
+                document.getElementById('field1-3').getBoundingClientRect()
+            ];
+            const fields2 = [
+                document.getElementById('field2-1').getBoundingClientRect(),
+                document.getElementById('field2-2').getBoundingClientRect(),
+                document.getElementById('field2-3').getBoundingClientRect()
+            ];
 
-            const path = `M${x1},${y1} C${(x1 + x2) / 2},${y1 - 100} ${(x1 + x2) / 2},${y2 + 100} ${x2},${y2}`;
-            
-            document.getElementById('curve').setAttribute('d', path);
+            fields1.forEach((field1, index) => {
+                const field2 = fields2[index];
+                const x1 = field1.left + field1.width / 2;
+                const y1 = field1.top + field1.height / 2;
+                const x2 = field2.left + field2.width / 2;
+                const y2 = field2.top + field2.height / 2;
+
+                const path = `M${x1},${y1} C${(x1 + x2) / 2},${y1 - 50} ${(x1 + x2) / 2},${y2 + 50} ${x2},${y2}`;
+                
+                document.getElementById(`curve${index + 1}`).setAttribute('d', path);
+            });
         }
 
-        function makeDraggable(element) {
+        function makeDraggable(element, container) {
             let offsetX, offsetY;
 
             element.addEventListener('mousedown', (e) => {
@@ -75,9 +112,18 @@
             });
 
             function onMouseMove(e) {
-                element.style.left = `${e.clientX - offsetX}px`;
-                element.style.top = `${e.clientY - offsetY}px`;
-                updateCurve();
+                const containerRect = container.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                let newX = e.clientX - offsetX;
+                let newY = e.clientY - offsetY;
+
+                // Boundaries
+                newX = Math.max(containerRect.left, Math.min(newX, containerRect.right - elementRect.width));
+                newY = Math.max(containerRect.top, Math.min(newY, containerRect.bottom - elementRect.height));
+
+                element.style.left = `${newX}px`;
+                element.style.top = `${newY}px`;
+                updateCurves();
             }
 
             function onMouseUp() {
@@ -86,11 +132,12 @@
             }
         }
 
-        window.addEventListener('resize', updateCurve);
+        window.addEventListener('resize', updateCurves);
         window.addEventListener('load', () => {
-            updateCurve();
-            makeDraggable(document.getElementById('obj1'));
-            makeDraggable(document.getElementById('obj2'));
+            updateCurves();
+            const container = document.querySelector('.container');
+            makeDraggable(document.getElementById('obj1'), container);
+            makeDraggable(document.getElementById('obj2'), container);
         });
     </script>
 </body>
