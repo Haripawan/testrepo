@@ -105,3 +105,64 @@ for unique_id in unique_ids:
     nx.draw(G, pos, with_labels=True, node_size=3000, node_color="skyblue", font_size=12, font_weight="bold", arrowsize=20)
     plt.title(f"Tree Diagram for unique_id {unique_id}")
     plt.show()
+
+
+
+###########
+
+import pandas as pd
+
+# Example DataFrame with more complex relationships
+data = {
+    'unique_id': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7],
+    'row_number': [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2],
+    'source_id': ['A', 'B', 'A', 'C', 'A', 'B', 'X', 'Y', 'A', 'B', 'X', 'Y', 'A', 'C'],
+    'source_name': ['Source A', 'Target B', 'Source A', 'Target C', 'Source A', 'Target B', 
+                    'Source X', 'Target Y', 'Source A', 'Target B', 'Source X', 'Target Y', 
+                    'Source A', 'Target C'],
+    'target_id': ['B', 'D', 'C', 'D', 'B', 'E', 'Y', 'Z', 'B', 'D', 'Y', 'Z', 'C', 'F'],
+    'target_name': ['Target B', 'Target D', 'Target C', 'Target D', 'Target B', 'Target E',
+                    'Target Y', 'Target Z', 'Target B', 'Target D', 'Target Y', 'Target Z', 
+                    'Target C', 'Target F']
+}
+
+df = pd.DataFrame(data)
+# Group by source_name and target_name to count the number of unique_ids
+grouped_df = df.groupby(['source_name', 'target_name']).agg({'unique_id': 'nunique'}).reset_index()
+
+# Create a list of unique labels
+all_labels = list(pd.concat([grouped_df['source_name'], grouped_df['target_name']]).unique())
+
+# Create a dictionary to map source and target names to indices
+label_indices = {name: i for i, name in enumerate(all_labels)}
+
+# Prepare Sankey data
+sankey_data = {
+    'sources': grouped_df['source_name'].map(label_indices).tolist(),
+    'targets': grouped_df['target_name'].map(label_indices).tolist(),
+    'values': grouped_df['unique_id'].tolist()
+}
+
+# Create the Sankey diagram
+import plotly.graph_objects as go
+
+sankey = go.Sankey(
+    node=dict(
+        pad=15,
+        thickness=20,
+        line=dict(color="black", width=0.5),
+        label=all_labels
+    ),
+    link=dict(
+        source=sankey_data['sources'],
+        target=sankey_data['targets'],
+        value=sankey_data['values']
+    )
+)
+
+# Plot the Sankey diagram
+fig = go.Figure(sankey)
+fig.update_layout(title_text="Complex Sankey Diagram with Unique Identifier Counts", font_size=10)
+fig.show()
+
+
