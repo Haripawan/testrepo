@@ -37,18 +37,26 @@ sankey_data = {
     'sources': grouped_df['source_name'].map(label_indices).tolist(),
     'targets': grouped_df['target_name'].map(label_indices).tolist(),
     'values': grouped_df['unique_id'].tolist(),
-    'unique_ids': grouped_df['unique_id'].tolist()  # Keep unique IDs for coloring
+    'sources_names': grouped_df['source_name'].tolist()  # Keep source names for coloring
 }
 
-# Generate a unique color for each unique ID
-unique_ids = sorted(df['unique_id'].unique())
-cmap = plt.get_cmap('tab20', len(unique_ids))  # Use a colormap with enough distinct colors
-colors = [mcolors.to_hex(cmap(i)) for i in range(len(unique_ids))]
-id_to_color = dict(zip(unique_ids, colors))
+# Generate a unique color for each source
+unique_sources = sorted(df['source_name'].unique())
+cmap = plt.get_cmap('tab20', len(unique_sources))  # Use a colormap with enough distinct colors
+colors = [mcolors.to_hex(cmap(i)) for i in range(len(unique_sources))]
+source_to_color = dict(zip(unique_sources, colors))
 
-# Function to assign colors to links based on unique IDs
+# Function to assign colors to nodes based on sources
+def assign_node_colors():
+    node_colors = ["rgba(200,200,200,0.6)"] * len(all_labels)
+    for source, color in source_to_color.items():
+        if source in label_indices:
+            node_colors[label_indices[source]] = color
+    return node_colors
+
+# Function to assign colors to links based on sources
 def assign_link_colors():
-    return [id_to_color[uid] for uid in sankey_data['unique_ids']]
+    return [source_to_color.get(source, "rgba(200,200,200,0.4)") for source in sankey_data['sources_names']]
 
 # Initialize the Dash app
 app = dash.Dash(__name__)
@@ -64,7 +72,7 @@ app.layout = html.Div([
 def update_graph(clickData):
     # Default colors
     link_colors = assign_link_colors()
-    node_colors = ["rgba(31,119,180,0.6)"] * len(all_labels)
+    node_colors = assign_node_colors()
     
     if clickData and 'points' in clickData:
         clicked_node = clickData['points'][0].get('pointIndex')
