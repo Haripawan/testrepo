@@ -56,7 +56,7 @@ def highlight_lineage(selected_node):
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    dcc.Graph(id='sankey-graph', config={'clickmode': 'event+select'}),
+    dcc.Graph(id='sankey-graph'),
 ])
 
 @app.callback(
