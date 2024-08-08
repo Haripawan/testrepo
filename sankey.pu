@@ -1,0 +1,47 @@
+import pandas as pd
+import plotly.graph_objects as go
+
+# Example DataFrame
+data = {
+    'unique_id': [1, 2, 3, 4, 5],
+    'row_number': [1, 2, 3, 4, 5],
+    'source_id': ['A', 'A', 'B', 'C', 'D'],
+    'source_name': ['Source A', 'Source A', 'Target B', 'Target C', 'Target D'],
+    'target_id': ['B', 'C', 'D', 'E', 'F'],
+    'target_name': ['Target B', 'Target C', 'Target D', 'Target E', 'Target F']
+}
+
+df = pd.DataFrame(data)
+
+# Create a list of unique labels
+all_labels = list(pd.concat([df['source_name'], df['target_name']]).unique())
+
+# Create a dictionary to map source and target names to indices
+label_indices = {name: i for i, name in enumerate(all_labels)}
+
+# Create the Sankey diagram data
+sankey_data = {
+    'sources': df['source_name'].map(label_indices).tolist(),
+    'targets': df['target_name'].map(label_indices).tolist(),
+    'values': [1] * len(df)  # or any other column that represents the flow value
+}
+
+# Create the Sankey diagram
+sankey = go.Sankey(
+    node=dict(
+        pad=15,
+        thickness=20,
+        line=dict(color="black", width=0.5),
+        label=all_labels
+    ),
+    link=dict(
+        source=sankey_data['sources'],
+        target=sankey_data['targets'],
+        value=sankey_data['values']
+    )
+)
+
+# Plot the Sankey diagram
+fig = go.Figure(sankey)
+fig.update_layout(title_text="Sankey Diagram from DataFrame", font_size=10)
+fig.show()
