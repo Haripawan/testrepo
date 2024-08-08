@@ -68,9 +68,10 @@ def update_graph(clickData):
     link_colors = ["rgba(31,119,180,0.6)"] * len(sankey_data['sources'])
     node_colors = ["rgba(31,119,180,0.6)"] * len(all_labels)
     
-    if clickData:
-        clicked_node = clickData['points'][0]['pointIndex']
-        link_colors, node_colors = highlight_lineage(clicked_node)
+    if clickData and 'points' in clickData:
+        clicked_node = clickData['points'][0].get('pointIndex')
+        if clicked_node is not None:
+            link_colors, node_colors = highlight_lineage(clicked_node)
     
     sankey = go.Sankey(
         node=dict(
