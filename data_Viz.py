@@ -81,8 +81,8 @@ def update_graph(clickData):
     
     sankey = go.Sankey(
         node=dict(
-            pad=15,
-            thickness=20,
+            pad=30,  # Increase padding to reduce clutter
+            thickness=30,  # Adjust node thickness for clarity
             line=dict(color="black", width=0.5),
             label=all_labels,
             color=node_colors
