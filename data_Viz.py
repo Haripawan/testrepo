@@ -3,6 +3,8 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 # Example DataFrame
 data = {
@@ -34,23 +36,19 @@ label_indices = {name: i for i, name in enumerate(all_labels)}
 sankey_data = {
     'sources': grouped_df['source_name'].map(label_indices).tolist(),
     'targets': grouped_df['target_name'].map(label_indices).tolist(),
-    'values': grouped_df['unique_id'].tolist()
+    'values': grouped_df['unique_id'].tolist(),
+    'unique_ids': grouped_df['unique_id'].tolist()  # Keep unique IDs for coloring
 }
 
-# Function to highlight a specific node's lineage
-def highlight_lineage(selected_node):
-    highlighted_link_colors = []
-    highlighted_node_colors = ["rgba(31,119,180,0.6)"] * len(all_labels)
+# Generate a unique color for each unique ID
+unique_ids = sorted(df['unique_id'].unique())
+cmap = plt.get_cmap('tab20', len(unique_ids))  # Use a colormap with enough distinct colors
+colors = [mcolors.to_hex(cmap(i)) for i in range(len(unique_ids))]
+id_to_color = dict(zip(unique_ids, colors))
 
-    for i, (src, tgt) in enumerate(zip(sankey_data['sources'], sankey_data['targets'])):
-        if src == selected_node or tgt == selected_node:
-            highlighted_link_colors.append("rgba(255,0,0,0.8)")  # Highlighted color
-            highlighted_node_colors[src] = "rgba(255,0,0,0.8)"  # Highlight source node
-            highlighted_node_colors[tgt] = "rgba(255,0,0,0.8)"  # Highlight target node
-        else:
-            highlighted_link_colors.append("rgba(200,200,200,0.4)")  # Dimmed color
-
-    return highlighted_link_colors, highlighted_node_colors
+# Function to assign colors to links based on unique IDs
+def assign_link_colors():
+    return [id_to_color[uid] for uid in sankey_data['unique_ids']]
 
 # Initialize the Dash app
 app = dash.Dash(__name__)
@@ -65,7 +63,7 @@ app.layout = html.Div([
 )
 def update_graph(clickData):
     # Default colors
-    link_colors = ["rgba(31,119,180,0.6)"] * len(sankey_data['sources'])
+    link_colors = assign_link_colors()
     node_colors = ["rgba(31,119,180,0.6)"] * len(all_labels)
     
     if clickData and 'points' in clickData:
