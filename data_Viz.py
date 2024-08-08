@@ -62,7 +62,17 @@ def assign_link_colors():
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    dcc.Graph(id='sankey-graph'),
+    html.Div([
+        dcc.Graph(id='sankey-graph', style={'height': '90vh', 'width': '100%'})
+    ],
+    style={
+        'display': 'flex',
+        'justify-content': 'center',
+        'align-items': 'center',
+        'height': '100vh',
+        'overflow': 'auto',
+        'padding': '20px'
+    })
 ])
 
 @app.callback(
