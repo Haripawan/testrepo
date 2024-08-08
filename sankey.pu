@@ -3,27 +3,27 @@ import plotly.graph_objects as go
 
 # Example DataFrame
 data = {
-    'unique_id': [1, 2, 3, 4, 5],
-    'row_number': [1, 2, 3, 4, 5],
-    'source_id': ['A', 'A', 'B', 'C', 'D'],
-    'source_name': ['Source A', 'Source A', 'Target B', 'Target C', 'Target D'],
-    'target_id': ['B', 'C', 'D', 'E', 'F'],
-    'target_name': ['Target B', 'Target C', 'Target D', 'Target E', 'Target F']
+    'unique_id': [1, 1, 1, 2, 2, 3, 3],
+    'row_number': [1, 2, 3, 1, 2, 1, 2],
+    'source_id': ['A', 'B', 'C', 'X', 'Y', 'M', 'N'],
+    'source_name': ['Source A', 'Target B', 'Target C', 'Source X', 'Target Y', 'Source M', 'Target N'],
+    'target_id': ['B', 'C', 'D', 'Y', 'Z', 'N', 'O'],
+    'target_name': ['Target B', 'Target C', 'Target D', 'Target Y', 'Target Z', 'Target N', 'Target O']
 }
 
 df = pd.DataFrame(data)
 
-# Create a list of unique labels
+# Create a list of unique labels across all unique_ids
 all_labels = list(pd.concat([df['source_name'], df['target_name']]).unique())
 
 # Create a dictionary to map source and target names to indices
 label_indices = {name: i for i, name in enumerate(all_labels)}
 
-# Create the Sankey diagram data
+# Prepare Sankey data
 sankey_data = {
     'sources': df['source_name'].map(label_indices).tolist(),
     'targets': df['target_name'].map(label_indices).tolist(),
-    'values': [1] * len(df)  # or any other column that represents the flow value
+    'values': [1] * len(df)  # You can change this if you have actual values
 }
 
 # Create the Sankey diagram
@@ -43,5 +43,65 @@ sankey = go.Sankey(
 
 # Plot the Sankey diagram
 fig = go.Figure(sankey)
-fig.update_layout(title_text="Sankey Diagram from DataFrame", font_size=10)
+fig.update_layout(title_text="Sankey Diagram for Multiple Sequences", font_size=10)
 fig.show()
+
+###############
+
+unique_ids = df['unique_id'].unique()
+
+for unique_id in unique_ids:
+    sub_df = df[df['unique_id'] == unique_id]
+    
+    # Prepare Sankey data for this unique_id
+    sankey_data = {
+        'sources': sub_df['source_name'].map(label_indices).tolist(),
+        'targets': sub_df['target_name'].map(label_indices).tolist(),
+        'values': [1] * len(sub_df)  # Replace with actual values if needed
+    }
+    
+    # Create the Sankey diagram
+    sankey = go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=all_labels
+        ),
+        link=dict(
+            source=sankey_data['sources'],
+            target=sankey_data['targets'],
+            value=sankey_data['values']
+        )
+    )
+    
+    # Plot each Sankey diagram
+    fig = go.Figure(sankey)
+    fig.update_layout(title_text=f"Sankey Diagram for unique_id {unique_id}", font_size=10)
+    fig.show()
+
+######
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+unique_ids = df['unique_id'].unique()
+
+for unique_id in unique_ids:
+    sub_df = df[df['unique_id'] == unique_id]
+    
+    # Initialize a directed graph
+    G = nx.DiGraph()
+    
+    # Add edges based on the DataFrame for the current unique_id
+    for _, row in sub_df.iterrows():
+        G.add_edge(row['source_name'], row['target_name'])
+    
+    # Generate positions for the nodes using spring layout
+    pos = nx.spring_layout(G)
+    
+    # Plot the tree diagram
+    plt.figure(figsize=(10, 8))
+    nx.draw(G, pos, with_labels=True, node_size=3000, node_color="skyblue", font_size=12, font_weight="bold", arrowsize=20)
+    plt.title(f"Tree Diagram for unique_id {unique_id}")
+    plt.show()
