@@ -63,6 +63,16 @@ def create_sankey_for_id(unique_id):
     def assign_link_colors():
         return [source_to_color.get(source, "rgba(200,200,200,0.4)") for source in sankey_data['sources_names']]
     
+    # Determine size based on the number of nodes and links
+    num_sources = len(set(sankey_data['sources']))
+    num_targets = len(set(sankey_data['targets']))
+    num_links = len(sankey_data['sources'])
+    
+    # Simple heuristic to determine size
+    max_size = 800  # Maximum size of the graph
+    min_size = 400  # Minimum size of the graph
+    size_factor = min_size + (max_size - min_size) * (num_sources + num_targets) / (num_sources + num_targets + num_links)
+    
     # Create the Sankey diagram
     sankey = go.Sankey(
         node=dict(
@@ -81,7 +91,13 @@ def create_sankey_for_id(unique_id):
     )
     
     fig = go.Figure(sankey)
-    fig.update_layout(title_text=f"Sankey Diagram for Unique ID {unique_id}", font_size=10)
+    fig.update_layout(
+        title_text=f"Sankey Diagram for Unique ID {unique_id}",
+        font_size=10,
+        autosize=True,
+        height=size_factor,  # Set height dynamically
+        width=size_factor   # Set width dynamically
+    )
     return fig
 
 # Initialize the Dash app
@@ -95,7 +111,7 @@ tabs = [dcc.Tab(label=f"ID {uid}", value=uid) for uid in unique_ids]
 
 app.layout = html.Div([
     dcc.Tabs(id='tabs', value=unique_ids[0], children=tabs, style={'width': '100%'}),
-    html.Div(id='tab-content', style={'display': 'flex', 'justify-content': 'center', 'align-items': 'center', 'height': '90vh', 'overflow': 'auto'})
+    html.Div(id='tab-content', style={'display': 'flex', 'justify-content': 'center', 'align-items': 'center', 'overflow': 'auto'})
 ])
 
 @app.callback(
@@ -104,7 +120,7 @@ app.layout = html.Div([
 )
 def update_tab(selected_id):
     fig = create_sankey_for_id(selected_id)
-    return dcc.Graph(figure=fig, style={'height': '90vh', 'width': '100%'})
+    return dcc.Graph(figure=fig)
 
 # Run the app
 if __name__ == '__main__':
