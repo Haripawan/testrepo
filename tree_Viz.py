@@ -1,26 +1,19 @@
-import networkx as nx
-import matplotlib.pyplot as plt
+from ete3 import Tree, TreeStyle, NodeStyle
 
-# Example source-target mapping
-edges = [
-    ('A', 'B'),
-    ('A', 'C'),
-    ('B', 'D'),
-    ('B', 'E'),
-    ('C', 'F'),
-    ('C', 'G'),
-    ('E', 'H'),
-    ('E', 'I')
-]
+# Example tree in Newick format
+newick = "(((A,B),(C,D)),((E,F),(G,H)));"
+tree = Tree(newick)
 
-# Create a directed graph from the edges
-G = nx.DiGraph(edges)
+# Define a tree style
+ts = TreeStyle()
+ts.mode = "c"  # Circular mode
 
-# Circular layout for the nodes
-pos = nx.circular_layout(G)
+# Customize individual nodes
+for n in tree.traverse():
+    nstyle = NodeStyle()
+    nstyle["fgcolor"] = "darkred"
+    nstyle["size"] = 10
+    n.set_style(nstyle)
 
-# Draw the nodes and edges with a circular layout
-plt.figure(figsize=(8, 8))
-nx.draw(G, pos, with_labels=True, arrows=True, node_size=2000, node_color='skyblue', font_size=15, font_weight='bold')
-plt.title('Circular Tree Visualization for Source-Target Mapping')
-plt.show()
+# Render the tree
+tree.render("advanced_circular_tree.png", w=800, tree_style=ts)
