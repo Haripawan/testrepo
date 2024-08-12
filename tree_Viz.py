@@ -1,6 +1,7 @@
 import pandas as pd
 from ete3 import Tree, TreeStyle, NodeStyle
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 # Step 1: Load the data from Excel
 file_path = 'your_excel_file.xlsx'  # Replace with your file path
@@ -26,11 +27,9 @@ for feed_id in df['feed_id'].unique():
             
     feed_trees[feed_id] = tree
 
-# Step 3: Define a color map for feed_ids
-color_map = {
-    feed_id: f"#{hex(1000000 + 2**feed_id)[2:]}"[:6]  # Generate unique colors based on feed_id
-    for feed_id in df['feed_id'].unique()
-}
+# Step 3: Generate distinct colors for each feed_id using matplotlib
+unique_feeds = df['feed_id'].unique()
+color_map = {feed_id: plt.cm.tab20(i / len(unique_feeds)) for i, feed_id in enumerate(unique_feeds)}
 
 # Step 4: Visualize each tree with color-coded nodes
 for feed_id, tree in feed_trees.items():
@@ -42,7 +41,8 @@ for feed_id, tree in feed_trees.items():
     for node in tree.traverse():
         node_style = NodeStyle()
         node_style["size"] = 10
-        node_style["fgcolor"] = color_map[feed_id]
+        r, g, b, _ = color_map[feed_id]  # Extract RGB values
+        node_style["fgcolor"] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
         node.set_style(node_style)
     
     # Render the tree and save it to a file
