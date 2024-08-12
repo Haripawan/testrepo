@@ -48,9 +48,8 @@ tree.render("combined_circular_tree.png", w=1000, tree_style=ts)
 
 ##################
 
-
 import pandas as pd
-from ete3 import Tree, TreeStyle, NodeStyle, faces, AttrFace, TextFace
+from ete3 import Tree, TreeStyle, NodeStyle, TextFace, faces
 from collections import defaultdict
 import matplotlib.pyplot as plt
 
@@ -66,6 +65,10 @@ color_map = {feed_id: plt.cm.tab20(i / len(unique_feeds)) for i, feed_id in enum
 tree = Tree()
 nodes = {}
 
+# Function to wrap text
+def wrap_text(text, length=10):
+    return '\n'.join([text[i:i+length] for i in range(0, len(text), length)])
+
 for _, row in df.iterrows():
     feed_id = row['feed_id']
     source = row['source_app']
@@ -78,21 +81,24 @@ for _, row in df.iterrows():
 
     # Apply the color based on feed_id and set node style
     node_style = NodeStyle()
-    node_style["shape"] = "square"
-    node_style["size"] = 0  # No circular size
+    node_style["shape"] = "rectangle"
+    node_style["size"] = 0
     node_style["fgcolor"] = "black"
-    node_style["vt_line_width"] = 2
-    node_style["hz_line_width"] = 2
+    node_style["vt_line_width"] = 2  # Increase to add space vertically
+    node_style["hz_line_width"] = 2  # Increase to add space horizontally
     node_style["vt_line_type"] = 0
     node_style["hz_line_type"] = 0
     node_style["bgcolor"] = f"#{int(color_map[feed_id][0] * 255):02x}{int(color_map[feed_id][1] * 255):02x}{int(color_map[feed_id][2] * 255):02x}"
 
+    # Wrap text inside the box
+    wrapped_text = wrap_text(nodes[target].name, length=10)
+    text_face = TextFace(wrapped_text, fsize=10, fgcolor="black")
+    
+    # Add full text as tooltip/hover text (only for interactive environments like Jupyter)
+    nodes[target].add_face(text_face, column=0, position="branch-right")
+    
     # Attach the node style to the node
     nodes[target].set_style(node_style)
-
-    # Add name inside the box
-    name_face = TextFace(nodes[target].name, fsize=10, fgcolor="black")
-    nodes[target].add_face(name_face, column=0, position="branch-right")
 
 # Step 4: Define a tree style for circular layout
 ts = TreeStyle()
@@ -101,6 +107,11 @@ ts.show_leaf_name = False  # Turn off default leaf names
 ts.show_branch_length = False
 ts.show_branch_support = False
 
-# Step 5: Render the combined tree and save it to a file
-tree.render("combined_circular_tree_with_boxes.png", w=1000, tree_style=ts)
+# Increase margin around tree
+ts.margin_left = 10
+ts.margin_right = 10
+ts.margin_top = 10
+ts.margin_bottom = 10
 
+# Step 5: Render the combined tree and save it to a file
+tree.render("combined_circular_tree_with_boxes_wrapped.png", w=1200, tree_style=ts)
