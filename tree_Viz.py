@@ -243,4 +243,88 @@ fig.update_layout(clickmode='event+select')
 fig.show()
 
 
+##############
+
+import pandas as pd
+import networkx as nx
+import plotly.graph_objects as go
+
+# Load your data
+file_path = 'your_excel_file.xlsx'  # Replace with your file path
+df = pd.read_excel(file_path)
+
+# Create the directed graph
+G = nx.DiGraph()
+
+# Add edges to the graph
+for _, row in df.iterrows():
+    G.add_edge(row['source_app'], row['target_app'], feed_id=row['feed_id'])
+
+# Generate positions for all nodes in a circular layout
+pos = nx.circular_layout(G)
+
+# Plotly visualization
+edge_trace = []
+for edge in G.edges(data=True):
+    source, target, data = edge
+    x0, y0 = pos[source]
+    x1, y1 = pos[target]
+    
+    edge_trace.append(
+        go.Scatter(
+            x=[x0, x1, None], y=[y0, y1, None],
+            line=dict(width=2, color='#888'),
+            hoverinfo='none',
+            mode='lines'
+        )
+    )
+
+node_trace = go.Scatter(
+    x=[], y=[],
+    text=[], mode='markers+text',
+    textposition='bottom center',
+    hoverinfo='text',
+    marker=dict(
+        showscale=True,
+        colorscale='YlGnBu',
+        size=10,
+        colorbar=dict(
+            thickness=15,
+            title='Node Connections',
+            xanchor='left',
+            titleside='right'
+        ),
+        line_width=2))
+
+# Add nodes
+for node in G.nodes():
+    x, y = pos[node]
+    node_trace['x'] += tuple([x])
+    node_trace['y'] += tuple([y])
+    node_trace['text'] += tuple([node])
+
+# Add interactivity for node clicks
+fig = go.Figure(data=edge_trace + [node_trace],
+                layout=go.Layout(
+                    title='<br>Interactive Circular Tree',
+                    titlefont_size=16,
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20, l=5, r=5, t=40),
+                    annotations=[dict(
+                        text="Click a node to highlight the path",
+                        showarrow=False,
+                        xref="paper", yref="paper",
+                        x=0.005, y=-0.002)],
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                )
+
+# JavaScript for interaction
+fig.update_traces(marker=dict(size=20), selector=dict(mode='markers'))
+fig.update_layout(clickmode='event+select')
+
+# Display the plot
+fig.show()
+
 
