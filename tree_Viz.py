@@ -330,7 +330,7 @@ fig.show()
 ####################
 
 import pandas as pd
-from ete3 import Tree, TreeStyle, NodeStyle, Face, AddFace
+from ete3 import Tree, TreeStyle, NodeStyle, Face
 from collections import defaultdict
 import matplotlib.colors as mcolors
 
@@ -361,10 +361,7 @@ for feed_id in df['feed_id'].unique():
 colors = list(mcolors.TABLEAU_COLORS.keys())  # Using Tableau colors
 color_map = {feed_id: colors[i % len(colors)] for i, feed_id in enumerate(df['feed_id'].unique())}
 
-# Step 4: Define a color map for edges
-edge_color_map = {feed_id: colors[i % len(colors)] for i, feed_id in enumerate(df['feed_id'].unique())}
-
-# Step 5: Visualize each tree with color-coded nodes and edges
+# Step 4: Visualize each tree with color-coded nodes
 for feed_id, tree in feed_trees.items():
     ts = TreeStyle()
     ts.mode = "c"
@@ -376,16 +373,15 @@ for feed_id, tree in feed_trees.items():
         node_style["size"] = 10
         node_style["fgcolor"] = color_map[feed_id]
         node_style["bgcolor"] = "white"  # Optional: Change background color if needed
+        node_style["font_size"] = 10  # Font size for labels
         node.set_style(node_style)
         
         # Add a label to each node
-        name_face = Face(node.name, fsize=10, fgcolor=color_map[feed_id])
-        AddFace(node, name_face, column=0)
+        node.add_face(Face(node.name, fsize=10, fgcolor=color_map[feed_id]), column=0, position="branch-right")
 
     # Render the tree and save it to a file
     output_file = f"circular_tree_feed_{feed_id}.png"
     tree.render(output_file, w=800, tree_style=ts)
 
     print(f"Tree for feed_id {feed_id} saved to {output_file}")
-
 
