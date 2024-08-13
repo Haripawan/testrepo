@@ -2,6 +2,19 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import numpy as np
 
+
+import numpy as np
+import pandas as pd
+
+# Example data - Adjacency matrix
+data = pd.DataFrame([
+    [0, 10, 20, 30],
+    [10, 0, 40, 20],
+    [20, 40, 0, 30],
+    [30, 20, 30, 0]
+], columns=['A', 'B', 'C', 'D'], index=['A', 'B', 'C', 'D'])
+
+data
 # Function to create the chord diagram
 def create_chord_diagram(matrix, labels):
     # Normalize the matrix for better visualization
