@@ -1,5 +1,7 @@
 
 
+
+
 import pandas as pd
 from ete3 import Tree, TreeStyle, NodeStyle
 from collections import defaultdict
@@ -115,3 +117,130 @@ ts.margin_bottom = 10
 
 # Step 5: Render the combined tree and save it to a file
 tree.render("combined_circular_tree_with_boxes_wrapped.png", w=1200, tree_style=ts)
+
+############################
+
+import pandas as pd
+from pycirclize import Circos
+from pycirclize.parser import PhyloTree
+import plotly.graph_objects as go
+
+# Load the data from Excel
+file_path = 'your_excel_file.xlsx'  # Replace with your file path
+df = pd.read_excel(file_path)
+
+# Create a newick-like string based on your data
+def create_newick_string(df):
+    newick = ""
+    paths = {}
+    for _, row in df.iterrows():
+        source = row['source_app']
+        target = row['target_app']
+        feed_id = row['feed_id']
+        if feed_id not in paths:
+            paths[feed_id] = []
+        paths[feed_id].append((source, target))
+
+    for feed_id, path in paths.items():
+        newick += "("
+        for source, target in path:
+            newick += f"({source},{target}),"
+        newick = newick.rstrip(',') + ")"
+
+    newick = newick.rstrip(',') + ";"
+    return newick
+
+newick_str = create_newick_string(df)
+
+# Initialize Circos with PhyloTree
+circos = Circos(sectors=PhyloTree(newick_str))
+
+# Draw the tree using pycirclize
+circos.plotfig(title="Circular Phylogenetic Tree")
+circos.show()
+
+# Moving to Plotly for Interactivity
+# Generate positions for nodes based on the tree structure
+
+# For simplicity, let's assume circular layout positions
+def generate_positions(tree):
+    from math import pi, cos, sin
+    n = len(tree)
+    positions = {}
+    angle = 2 * pi / n
+    for i, node in enumerate(tree.get_terminals()):
+        positions[node.name] = (cos(i * angle), sin(i * angle))
+    return positions
+
+# Get terminal nodes positions
+tree = PhyloTree(newick_str).tree
+pos = generate_positions(tree)
+
+# Plot with Plotly
+edge_trace = []
+for clade in tree.find_clades(order='level'):
+    if clade.is_terminal():
+        continue
+    for child in clade:
+        x0, y0 = pos[clade.name]
+        x1, y1 = pos[child.name]
+        edge_trace.append(
+            go.Scatter(
+                x=[x0, x1, None], y=[y0, y1, None],
+                line=dict(width=2, color='#888'),
+                hoverinfo='none',
+                mode='lines'
+            )
+        )
+
+node_trace = go.Scatter(
+    x=[], y=[],
+    text=[],
+    mode='markers+text',
+    textposition='bottom center',
+    hoverinfo='text',
+    marker=dict(
+        showscale=True,
+        colorscale='YlGnBu',
+        size=10,
+        colorbar=dict(
+            thickness=15,
+            title='Node Connections',
+            xanchor='left',
+            titleside='right'
+        ),
+        line_width=2))
+
+# Add nodes
+for node in tree.get_terminals():
+    x, y = pos[node.name]
+    node_trace['x'] += tuple([x])
+    node_trace['y'] += tuple([y])
+    node_trace['text'] += tuple([node.name])
+
+# Add interactivity for node clicks
+fig = go.Figure(data=edge_trace + [node_trace],
+                layout=go.Layout(
+                    title='<br>Interactive Circular Phylogenetic Tree',
+                    titlefont_size=16,
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20,l=5,r=5,t=40),
+                    annotations=[ dict(
+                        text="Click a node to highlight the path",
+                        showarrow=False,
+                        xref="paper", yref="paper",
+                        x=0.005, y=-0.002 ) ],
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                )
+
+# JavaScript for interaction
+fig.update_traces(marker=dict(size=20), selector=dict(mode='markers'))
+fig.update_layout(clickmode='event+select')
+
+# Display the plot
+fig.show()
+
+
+
