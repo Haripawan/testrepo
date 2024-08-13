@@ -373,15 +373,14 @@ for feed_id, tree in feed_trees.items():
         node_style["size"] = 10
         node_style["fgcolor"] = color_map[feed_id]
         node_style["bgcolor"] = "white"  # Optional: Change background color if needed
-        node_style["font_size"] = 10  # Font size for labels
         node.set_style(node_style)
         
         # Add a label to each node
-        node.add_face(Face(node.name, fsize=10, fgcolor=color_map[feed_id]), column=0, position="branch-right")
+        name_face = Face(node.name, fsize=10, fgcolor=color_map[feed_id])
+        node.add_face(name_face, column=0, position="branch-right")
 
     # Render the tree and save it to a file
     output_file = f"circular_tree_feed_{feed_id}.png"
     tree.render(output_file, w=800, tree_style=ts)
 
     print(f"Tree for feed_id {feed_id} saved to {output_file}")
-
