@@ -327,4 +327,65 @@ fig.update_layout(clickmode='event+select')
 # Display the plot
 fig.show()
 
+####################
+
+import pandas as pd
+from ete3 import Tree, TreeStyle, NodeStyle, Face, AddFace
+from collections import defaultdict
+import matplotlib.colors as mcolors
+
+# Step 1: Load the data from Excel
+file_path = 'your_excel_file.xlsx'  # Replace with your file path
+df = pd.read_excel(file_path)
+
+# Step 2: Organize data into a dictionary of trees, keyed by feed_id
+feed_trees = defaultdict(lambda: Tree())
+
+for feed_id in df['feed_id'].unique():
+    feed_data = df[df['feed_id'] == feed_id]
+    tree = Tree()
+    nodes = {}
+    
+    for _, row in feed_data.iterrows():
+        source = row['source_app']
+        target = row['target_app']
+        
+        if source not in nodes:
+            nodes[source] = tree.add_child(name=source)
+        if target not in nodes:
+            nodes[target] = nodes[source].add_child(name=target)
+            
+    feed_trees[feed_id] = tree
+
+# Step 3: Define a color map for feed_ids
+colors = list(mcolors.TABLEAU_COLORS.keys())  # Using Tableau colors
+color_map = {feed_id: colors[i % len(colors)] for i, feed_id in enumerate(df['feed_id'].unique())}
+
+# Step 4: Define a color map for edges
+edge_color_map = {feed_id: colors[i % len(colors)] for i, feed_id in enumerate(df['feed_id'].unique())}
+
+# Step 5: Visualize each tree with color-coded nodes and edges
+for feed_id, tree in feed_trees.items():
+    ts = TreeStyle()
+    ts.mode = "c"
+    ts.show_leaf_name = True
+    
+    # Apply color to each node based on the feed_id
+    for node in tree.traverse():
+        node_style = NodeStyle()
+        node_style["size"] = 10
+        node_style["fgcolor"] = color_map[feed_id]
+        node_style["bgcolor"] = "white"  # Optional: Change background color if needed
+        node.set_style(node_style)
+        
+        # Add a label to each node
+        name_face = Face(node.name, fsize=10, fgcolor=color_map[feed_id])
+        AddFace(node, name_face, column=0)
+
+    # Render the tree and save it to a file
+    output_file = f"circular_tree_feed_{feed_id}.png"
+    tree.render(output_file, w=800, tree_style=ts)
+
+    print(f"Tree for feed_id {feed_id} saved to {output_file}")
+
 
