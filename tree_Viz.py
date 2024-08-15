@@ -332,58 +332,47 @@ fig.show()
 import pandas as pd
 from ete3 import Tree, TreeStyle, NodeStyle, TextFace
 from collections import defaultdict
-import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 
 # Step 1: Load the data from Excel
 file_path = 'your_excel_file.xlsx'  # Replace with your file path
 df = pd.read_excel(file_path)
 
-# Step 2: Organize data into a combined tree
-combined_tree = Tree()
-node_map = {}
+# Step 2: Generate distinct colors for each feed_id using matplotlib
+unique_feeds = df['feed_id'].unique()
+color_map = {feed_id: plt.cm.tab20(i / len(unique_feeds)) for i, feed_id in enumerate(unique_feeds)}
 
-# Define a color map for feed_ids
-colors = list(mcolors.TABLEAU_COLORS.keys())  # Using Tableau colors
-color_map = {feed_id: colors[i % len(colors)] for i, feed_id in enumerate(df['feed_id'].unique())}
+# Step 3: Create a single tree for all feeds
+tree = Tree()
+nodes = {}
 
-# Step 3: Build the tree from the dataframe
 for _, row in df.iterrows():
+    feed_id = row['feed_id']
     source = row['source_app']
     target = row['target_app']
-    feed_id = row['feed_id']
     
-    # Add source node if not already present
-    if source not in node_map:
-        source_node = combined_tree.add_child(name=source)
-        node_map[source] = source_node
-    else:
-        source_node = node_map[source]
-    
-    # Add target node if not already present
-    if target not in node_map:
-        target_node = source_node.add_child(name=target)
-        node_map[target] = target_node
-    else:
-        target_node = node_map[target]
+    if source not in nodes:
+        nodes[source] = tree.add_child(name=source)
+    if target not in nodes:
+        nodes[target] = nodes[source].add_child(name=target)
 
-    # Apply color to each node based on the feed_id
+    # Apply the color based on feed_id
     node_style = NodeStyle()
     node_style["size"] = 10
-    node_style["fgcolor"] = color_map[feed_id]
-    target_node.set_style(node_style)
+    r, g, b, _ = color_map[feed_id]  # Extract RGB values
+    node_style["fgcolor"] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+    nodes[target].set_style(node_style)
     
-    # Add a label to each node
-    name_face = TextFace(target_node.name, fsize=10, fgcolor=color_map[feed_id])
-    target_node.add_face(name_face, column=0, position="branch-right")
+    # Add labels to the nodes
+    name_face = TextFace(target, fsize=10, fgcolor=node_style["fgcolor"])
+    nodes[target].add_face(name_face, column=0, position="branch-right")
 
-# Step 4: Visualize the combined tree
+# Step 4: Define a tree style for circular layout
 ts = TreeStyle()
-ts.mode = "c"  # Circular mode
-ts.show_leaf_name = False  # Names are displayed via TextFace, so this is redundant
-ts.scale = 20  # Adjust scale to fit the tree nicely in the canvas
+ts.mode = "c"
+ts.show_leaf_name = True
+ts.show_branch_length = False
+ts.show_branch_support = False
 
-# Render the combined tree and save it to a file
-output_file = "combined_tree.png"
-combined_tree.render(output_file, w=1000, tree_style=ts)
-
-print(f"Combined tree saved to {output_file}")
+# Step 5: Render the combined tree and save it to a file
+tree.render("combined_circular_tree.png", w=1000, tree_style=ts)
