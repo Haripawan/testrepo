@@ -363,17 +363,21 @@ for _, row in df.iterrows():
     nodes[target].set_style(node_style)
     
     # Add labels to the nodes
-    name_face = TextFace(target, fsize=12, fgcolor=node_style["fgcolor"])  # Increase font size
+    name_face = TextFace(target, fsize=12, fgcolor=node_style["fgcolor"])
     nodes[target].add_face(name_face, column=0, position="branch-right")
 
-# Step 4: Define a tree style for circular layout
+# Step 4: Define a tree style for circular layout with all nodes aligned
 ts = TreeStyle()
-ts.mode = "c"
+ts.mode = "c"  # Circular layout
 ts.show_leaf_name = False  # Avoid duplicate names since we're using TextFace
-ts.scale = 100  # Adjust the scale of the tree to fit more content
+ts.scale = 20  # Adjust the scale of the tree to fit more content
+ts.force_topology = True  # Force all nodes to be at the same level
+
+# Additional options for spacing
 ts.branch_vertical_margin = 10  # Increase the spacing between branches
 ts.min_leaf_separation = 10  # Adjust minimum leaf separation
 
 # Step 5: Render the combined tree and save it to a file
-tree.render("combined_circular_tree_large.png", w=2000, tree_style=ts)  # Increase the output image size
+tree.render("circular_tree_aligned.png", w=2000, tree_style=ts)  # Increase the output image size
+
 
