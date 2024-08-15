@@ -331,7 +331,6 @@ fig.show()
 
 import pandas as pd
 from ete3 import Tree, TreeStyle, NodeStyle, TextFace
-from collections import defaultdict
 import matplotlib.pyplot as plt
 
 # Step 1: Load the data from Excel
@@ -364,15 +363,17 @@ for _, row in df.iterrows():
     nodes[target].set_style(node_style)
     
     # Add labels to the nodes
-    name_face = TextFace(target, fsize=10, fgcolor=node_style["fgcolor"])
+    name_face = TextFace(target, fsize=12, fgcolor=node_style["fgcolor"])  # Increase font size
     nodes[target].add_face(name_face, column=0, position="branch-right")
 
 # Step 4: Define a tree style for circular layout
 ts = TreeStyle()
 ts.mode = "c"
-ts.show_leaf_name = True
-ts.show_branch_length = False
-ts.show_branch_support = False
+ts.show_leaf_name = False  # Avoid duplicate names since we're using TextFace
+ts.scale = 100  # Adjust the scale of the tree to fit more content
+ts.branch_vertical_margin = 10  # Increase the spacing between branches
+ts.min_leaf_separation = 10  # Adjust minimum leaf separation
 
 # Step 5: Render the combined tree and save it to a file
-tree.render("combined_circular_tree.png", w=1000, tree_style=ts)
+tree.render("combined_circular_tree_large.png", w=2000, tree_style=ts)  # Increase the output image size
+
