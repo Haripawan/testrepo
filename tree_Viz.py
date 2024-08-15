@@ -357,29 +357,34 @@ for _, row in df.iterrows():
 
     # Apply the color based on feed_id
     node_style = NodeStyle()
-    node_style["size"] = 10
+    node_style["size"] = 20  # Increased node size for visibility
     r, g, b, _ = color_map[feed_id]  # Extract RGB values
     node_style["fgcolor"] = f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
     node_style["hz_line_color"] = node_style["fgcolor"]  # Color horizontal lines
     node_style["vt_line_color"] = node_style["fgcolor"]  # Color vertical lines
-    node_style["hz_line_width"] = 2  # Thicker horizontal lines
-    node_style["vt_line_width"] = 2  # Thicker vertical lines
+    node_style["hz_line_width"] = 3  # Thicker horizontal lines
+    node_style["vt_line_width"] = 3  # Thicker vertical lines
     nodes[target].set_style(node_style)
     
     # Add labels to the nodes
-    name_face = TextFace(target, fsize=10, fgcolor="black")
+    name_face = TextFace(target, fsize=16, fgcolor="black", ftype="Arial")  # Thicker and larger text
     nodes[target].add_face(name_face, column=0, position="branch-right")
 
-# Step 4: Define a tree style for circular layout with all nodes aligned
+# Step 4: Define a tree style for circular layout with uniform radial distance for each hop level
 ts = TreeStyle()
 ts.mode = "c"  # Circular layout
 ts.show_leaf_name = False  # Avoid duplicate names since we're using TextFace
 ts.scale = 200  # Adjust the scale of the tree to fit more content
 ts.force_topology = True  # Force all nodes to be at the same level
-ts.root_opening_factor = 1  # Close the circle a bit
+ts.root_opening_factor = 0.9  # Control how tight the circle is
+
+# Increase the thickness and readability of lines and text
+ts.branch_vertical_margin = 10  # Increase the spacing between branches
+ts.min_leaf_separation = 20  # Adjust minimum leaf separation
 
 # Step 5: Render the combined tree and save it to a file
-tree.render("aligned_circular_tree.png", w=2000, h=2000, tree_style=ts)
+tree.render("aligned_circular_tree_thicker.png", w=3000, h=3000, tree_style=ts)
+
 
 
 
