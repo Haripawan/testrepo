@@ -199,3 +199,78 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+##########################
+
+import cx_Oracle
+from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
+from presidio_analyzer.nlp_engine import SpacyNlpEngine
+import pandas as pd
+
+# Step 1: Connect to Oracle Database
+dsn_tns = cx_Oracle.makedsn('hostname', 'port', service_name='service_name')
+connection = cx_Oracle.connect(user='username', password='password', dsn=dsn_tns)
+cursor = connection.cursor()
+
+# Step 2: Setup Presidio Analyzer
+nlp_engine = SpacyNlpEngine()  # Default to spacy engine
+registry = RecognizerRegistry()
+registry.load_predefined_recognizers()
+analyzer = AnalyzerEngine(nlp_engine=nlp_engine, registry=registry)
+
+# Step 3: Fetch Data from Oracle
+query = "SELECT * FROM your_table_name FETCH FIRST 500 ROWS ONLY"
+cursor.execute(query)
+data = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+
+# Step 4: Analyze for PII and generate a detailed report
+def analyze_pii(dataframe, table_name):
+    pii_report = []
+    
+    for column in dataframe.columns:
+        for value in dataframe[column].astype(str):
+            results = analyzer.analyze(text=value, entities=[], language='en')
+            
+            # If PII is detected, store it in the report
+            for result in results:
+                pii_report.append({
+                    "Table": table_name,
+                    "Column": column,
+                    "Detected PII Type": result.entity_type,  # The type of PII (e.g., EMAIL, PHONE_NUMBER, etc.)
+                    "Confidence Score": result.score,         # Confidence score for the detection
+                    "Sample Value": value                     # Optional: store the sample value for context (useful for validation)
+                })
+    
+    return pii_report
+
+# Step 5: Generate Report for Multiple Tables
+def generate_report(tables):
+    all_pii_reports = []
+    
+    for table in tables:
+        # Fetch the first 500 rows for each table
+        query = f"SELECT * FROM {table} FETCH FIRST 500 ROWS ONLY"
+        cursor.execute(query)
+        data = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+        
+        # Analyze PII in the table and append results
+        table_pii_report = analyze_pii(data, table)
+        all_pii_reports.extend(table_pii_report)
+    
+    return all_pii_reports
+
+# List of tables to scan
+tables = ["your_table_name1", "your_table_name2", "your_table_name3"]
+
+# Generate PII report
+pii_reports = generate_report(tables)
+
+# Convert the PII report into a pandas DataFrame for easier viewing and exporting
+pii_report_df = pd.DataFrame(pii_reports)
+
+# Step 6: Print or Export the Report
+print(pii_report_df)
+
+# Optional: Export to CSV
+pii_report_df.to_csv("pii_report.csv", index=False)
