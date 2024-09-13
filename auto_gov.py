@@ -1,3 +1,4 @@
+
 import os
 import cx_Oracle
 from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
@@ -44,12 +45,15 @@ def add_custom_patterns(analyzer, pii_config):
 # Add custom patterns to the analyzer
 add_custom_patterns(analyzer, pii_config)
 
-# Step 6: Fetch Data from Oracle
+# Step 6: Get list of custom PII types from the config
+custom_pii_types = [pattern_data['pii_type'] for pattern_data in pii_config["custom_pii_patterns"]]
+
+# Step 7: Fetch Data from Oracle
 query = "SELECT * FROM your_table_name FETCH FIRST 500 ROWS ONLY"
 cursor.execute(query)
 data = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
 
-# Step 7: Analyze for PII, separate default and custom results, and add sample values
+# Step 8: Analyze for PII, separate default and custom results, and add sample values
 def analyze_pii(dataframe, table_name):
     pii_report = []
 
@@ -63,9 +67,9 @@ def analyze_pii(dataframe, table_name):
         for value in dataframe[column].astype(str):
             results = analyzer.analyze(text=value, entities=[], language='en')
 
-            # Separate default and custom recognizers
+            # Separate default and custom recognizers based on entity_type
             for result in results:
-                if result.recognizer_name.startswith("PatternRecognizer"):
+                if result.entity_type in custom_pii_types:
                     # Custom recognizer
                     custom_pii_scores[result.entity_type].append(result.score)
                     if result.entity_type not in custom_pii_samples:
@@ -112,7 +116,7 @@ def analyze_pii(dataframe, table_name):
 
     return pii_report
 
-# Step 8: Generate Report for Multiple Tables
+# Step 9: Generate Report for Multiple Tables
 def generate_report(tables):
     all_pii_reports = []
 
@@ -137,12 +141,11 @@ pii_reports = generate_report(tables)
 # Convert the PII report into a pandas DataFrame for easier viewing and exporting
 pii_report_df = pd.DataFrame(pii_reports)
 
-# Step 9: Print or Export the Report
+# Step 10: Print or Export the Report
 print(pii_report_df)
 
 # Optional: Export to CSV
 pii_report_df.to_csv("pii_report.csv", index=False)
-
 
 '''{
   "hostname": "your_hostname",
