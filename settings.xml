@@ -1,0 +1,80 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- localRepository
+   | The path to the local repository, by default it's set to ~/.m2/repository.
+   -->
+  <localRepository>/path/to/local/repo</localRepository>
+
+  <!-- Interactive mode controlling the prompts -->
+  <interactiveMode>true</interactiveMode>
+
+  <!-- Offline mode; this will prevent Maven from downloading updates from the internet -->
+  <offline>false</offline>
+
+  <!-- Proxies -->
+  <proxies>
+    <!-- Example proxy configuration
+    <proxy>
+      <id>example-proxy</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>proxy.example.com</host>
+      <port>8080</port>
+      <username>proxyuser</username>
+      <password>somepassword</password>
+      <nonProxyHosts>www.google.com|*.example.com</nonProxyHosts>
+    </proxy>
+    -->
+  </proxies>
+
+  <!-- Servers for authentication -->
+  <servers>
+    <!-- Example repository server
+    <server>
+      <id>my-repo</id>
+      <username>user</username>
+      <password>password</password>
+    </server>
+    -->
+  </servers>
+
+  <!-- Mirrors for repositories -->
+  <mirrors>
+    <!-- Example mirror for Maven Central
+    <mirror>
+      <id>central</id>
+      <mirrorOf>central</mirrorOf>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <blocked>false</blocked>
+    </mirror>
+    -->
+  </mirrors>
+
+  <!-- Profiles -->
+  <profiles>
+    <profile>
+      <id>default</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+
+  <!-- Active profiles -->
+  <activeProfiles>
+    <activeProfile>default</activeProfile>
+  </activeProfiles>
+
+</settings>
