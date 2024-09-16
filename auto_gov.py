@@ -65,17 +65,18 @@ def analyze_pii(dataframe, table_name):
         custom_pii_samples = {}  # {PII_type: sample_value} for custom PII types
 
         for value in dataframe[column].astype(str):
+            # Run default analysis
             results = analyzer.analyze(text=value, entities=[], language='en')
 
             # Separate default and custom recognizers based on entity_type
             for result in results:
                 if result.entity_type in custom_pii_types:
-                    # Custom recognizer
+                    # Custom recognizer match
                     custom_pii_scores[result.entity_type].append(result.score)
                     if result.entity_type not in custom_pii_samples:
                         custom_pii_samples[result.entity_type] = value
                 else:
-                    # Default recognizer
+                    # Default recognizer match
                     default_pii_scores[result.entity_type].append(result.score)
                     if result.entity_type not in default_pii_samples:
                         default_pii_samples[result.entity_type] = value
@@ -141,10 +142,10 @@ pii_reports = generate_report(tables)
 # Convert the PII report into a pandas DataFrame for easier viewing and exporting
 pii_report_df = pd.DataFrame(pii_reports)
 
-# Step 10: Print or Export the Report
-print(pii_report_df)
+# Step 10: Convert all columns to string to avoid scientific notation in Excel/CSV
+pii_report_df = pii_report_df.astype(str)
 
-# Optional: Export to CSV
+# Step 11: Export the report to CSV
 pii_report_df.to_csv("pii_report.csv", index=False)
 
 '''{
