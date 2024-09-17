@@ -173,3 +173,143 @@ pii_report_df.to_csv("pii_report.csv", index=False)
     }
   ]
 }'''
+
+
+
+#####################
+
+import os
+import cx_Oracle
+from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
+from presidio_analyzer.nlp_engine import SpacyNlpEngine
+from presidio_analyzer.recognizer_registry import RecognizerRegistry
+import pandas as pd
+import spacy
+from collections import defaultdict
+import json
+
+# Step 1: Load configurations from files
+def load_config(config_file):
+    with open(config_file, 'r') as f:
+        return json.load(f)
+
+# Load database connection config
+db_config = load_config("connection_config.json")
+
+# Load custom PII patterns config
+pii_config = load_config("pii_patterns_config.json")
+
+# Step 2: Connect to Oracle Database using config file
+dsn_tns = cx_Oracle.makedsn(db_config["hostname"], db_config["port"], service_name=db_config["service_name"])
+connection = cx_Oracle.connect(user=db_config["username"], password=db_config["password"], dsn=dsn_tns)
+cursor = connection.cursor()
+
+# Step 3: Load the spaCy model from the local installation
+spacy_model_path = "en_core_web_lg"  # Ensure the model is installed offline and accessible
+nlp = spacy.load(spacy_model_path)
+
+# Step 4: Set up the Presidio analyzer to use the local spaCy NLP engine
+nlp_engine = SpacyNlpEngine(spacy_model=spacy_model_path)
+registry = RecognizerRegistry()
+registry.load_predefined_recognizers()  # Load predefined recognizers
+analyzer = AnalyzerEngine(nlp_engine=nlp_engine, registry=registry)
+
+# Step 5: Add custom PII patterns from configuration
+def add_custom_patterns(analyzer, pii_config):
+    for pattern_data in pii_config["custom_pii_patterns"]:
+        pattern = Pattern(name=pattern_data["name"], regex=pattern_data["regex"], score=pattern_data["confidence"])
+        recognizer = PatternRecognizer(supported_entity=pattern_data["pii_type"], patterns=[pattern])
+        analyzer.registry.add_recognizer(recognizer)
+
+# Add custom patterns to the analyzer
+add_custom_patterns(analyzer, pii_config)
+
+# Step 6: Get list of custom PII types from the config
+custom_pii_types = [pattern_data['pii_type'] for pattern_data in pii_config["custom_pii_patterns"]]
+
+# Step 7: Fetch Data from Oracle
+query = "SELECT * FROM your_table_name FETCH FIRST 500 ROWS ONLY"
+cursor.execute(query)
+data = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+
+# Step 8: Analyze for PII, separate default and custom results, and add sample values
+def analyze_pii(dataframe, table_name):
+    pii_report = []
+
+    # Filter out columns that have '_ID', '_CD', or '_DT' in the name
+    columns_to_analyze = [col for col in dataframe.columns if not (col.endswith('_ID') or col.endswith('_CD') or col.endswith('_DT'))]
+
+    for column in columns_to_analyze:
+        # Variables to track the highest confidence scores and sample values for default and custom PII types
+        max_default_pii_type = None
+        max_default_confidence = 0
+        default_sample_value = None
+
+        max_custom_pii_type = None
+        max_custom_confidence = 0
+        custom_sample_value = None
+
+        for value in dataframe[column].astype(str):
+            # Run default analysis
+            default_results = analyzer.analyze(text=value, entities=[], language='en')
+
+            # Separate default and custom recognizers based on entity_type
+            for result in default_results:
+                # Handle custom patterns separately
+                if result.entity_type in custom_pii_types:
+                    # Custom recognizer match
+                    if result.score > max_custom_confidence:
+                        max_custom_confidence = result.score
+                        max_custom_pii_type = result.entity_type
+                        custom_sample_value = value
+                else:
+                    # Default recognizer match
+                    if result.score > max_default_confidence:
+                        max_default_confidence = result.score
+                        max_default_pii_type = result.entity_type
+                        default_sample_value = value
+
+        # Append the result to the report
+        pii_report.append({
+            "Table": table_name,
+            "Column": column,
+            "Default PII Type": max_default_pii_type,
+            "Default PII Confidence": max_default_confidence,
+            "Default Sample Value": default_sample_value,
+            "Custom PII Type": max_custom_pii_type,
+            "Custom PII Confidence": max_custom_confidence,
+            "Custom Sample Value": custom_sample_value
+        })
+
+    return pii_report
+
+# Step 9: Generate Report for Multiple Tables
+def generate_report(tables):
+    all_pii_reports = []
+
+    for table in tables:
+        # Fetch the first 500 rows for each table
+        query = f"SELECT * FROM {table} FETCH FIRST 500 ROWS ONLY"
+        cursor.execute(query)
+        data = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+
+        # Analyze PII in the table and append results
+        table_pii_report = analyze_pii(data, table)
+        all_pii_reports.extend(table_pii_report)
+
+    return all_pii_reports
+
+# List of tables to scan
+tables = ["your_table_name1", "your_table_name2", "your_table_name3"]
+
+# Generate PII report
+pii_reports = generate_report(tables)
+
+# Convert the PII report into a pandas DataFrame for easier viewing and exporting
+pii_report_df = pd.DataFrame(pii_reports)
+
+# Step 10: Convert all columns to string to avoid scientific notation in Excel/CSV
+pii_report_df = pii_report_df.astype(str)
+
+# Step 11: Export the report to CSV
+pii_report_df.to_csv("pii_report.csv", index=False)
