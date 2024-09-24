@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import Image, ImageTk
+import io
 import cairosvg
 
 # Create the main window
@@ -76,6 +77,17 @@ def limit_size(event):
     if len(event.widget.get()) > 100:
         event.widget.delete(100, tk.END)
 
+# Function to enable or disable delete button based on row count
+def update_delete_buttons():
+    if len(target_columns) <= 1:
+        # Disable the delete button if there is only one row
+        for widget in target_column_widgets:
+            widget['delete_button'].config(state=tk.DISABLED)
+    else:
+        # Enable the delete buttons when there are multiple rows
+        for widget in target_column_widgets:
+            widget['delete_button'].config(state=tk.NORMAL)
+
 # Function to add a new row (target column)
 def add_target_column():
     row = len(target_columns) + 1
@@ -130,8 +142,41 @@ def add_target_column():
     })
     target_column_widgets.append({
         "save_button": save_button,
-        "edit_button": None  # Placeholder for the future edit button
+        "delete_button": delete_button
     })
 
-# Other necessary functions (save_row, delete_target_column, etc.) remain as in the previous code
-# with all updated logic from the previous steps.
+    # Update the delete buttons' state after adding a row
+    update_delete_buttons()
+
+# Function to delete a row
+def delete_target_column(idx):
+    if len(target_columns) > 1:
+        # Remove widgets from grid and delete the row data
+        for col in target_columns[idx].values():
+            if isinstance(col, list):  # For "extra_source_fields"
+                for widget in col:
+                    widget.grid_forget()
+            else:
+                col.grid_forget()
+        
+        # Remove the row from the lists
+        target_columns.pop(idx)
+        target_column_widgets.pop(idx)
+    
+    # Rearrange remaining rows
+    for i, target_row in enumerate(target_columns):
+        for j, widget in enumerate(target_row.values()):
+            if isinstance(widget, list):  # For "extra_source_fields"
+                for field_widget in widget:
+                    field_widget.grid(row=i+1, column=j, padx=5, pady=5, sticky="nsew")
+            else:
+                widget.grid(row=i+1, column=j, padx=5, pady=5, sticky="nsew")
+    
+    # Update the delete buttons' state after deleting a row
+    update_delete_buttons()
+
+# Initial call to add the first target column
+add_target_column()
+
+# Start the Tkinter main loop
+root.mainloop()
