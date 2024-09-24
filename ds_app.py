@@ -101,9 +101,16 @@ def enable_row_editing(row_idx):
 # Function to handle row save (tick button clicked)
 def save_row(row_idx):
     make_row_read_only(row_idx)
-    # Show pencil button after save
+    # Hide save button and show edit (pencil) button after save
     target_column_widgets[row_idx]["save_button"].grid_forget()
     target_column_widgets[row_idx]["pencil_button"].grid(row=row_idx+1, column=10, padx=5, pady=5, sticky="nsew")
+
+# Function to handle row edit (pencil button clicked)
+def edit_row(row_idx):
+    enable_row_editing(row_idx)
+    # Hide pencil button and show save (tick) button when editing
+    target_column_widgets[row_idx]["pencil_button"].grid_forget()
+    target_column_widgets[row_idx]["save_button"].grid(row=row_idx+1, column=10, padx=5, pady=5, sticky="nsew")
 
 # Function to enable or disable delete button based on row count
 def update_delete_buttons():
@@ -165,7 +172,7 @@ def add_target_column():
     save_button.grid(row=row, column=10, padx=5, pady=5, sticky="nsew")
     
     # Pencil button for edit (hidden initially)
-    pencil_button = tk.Button(frame, image=pencil_icon, width=button_width, height=20, command=lambda idx=row-1: enable_row_editing(idx))
+    pencil_button = tk.Button(frame, image=pencil_icon, width=button_width, height=20, command=lambda idx=row-1: edit_row(idx))
     
     # Append the new column info to the list
     target_columns.append({
@@ -183,16 +190,17 @@ def add_target_column():
 
     # Append the button widgets to the widget list
     target_column_widgets.append({
-        "save_button": save_button,
+        "add_button": add_button,
         "delete_button": delete_button,
-        "pencil_button": pencil_button
+        "save_button": save_button,
+        "pencil_button": pencil_button,
     })
-
-    # Update delete button states
+    
     update_delete_buttons()
 
-# Function to delete a row
+# Function to delete target column
 def delete_target_column(row_idx):
+    # Remove all widgets in the row
     for widget in target_columns[row_idx].values():
         if widget:
             widget.grid_forget()  # Remove the widget from the grid
