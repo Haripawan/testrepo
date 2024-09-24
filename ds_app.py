@@ -10,7 +10,7 @@ root.geometry("1200x600")  # Set a default size
 
 # Create a frame to hold the tabs and logged-in info in the same line
 top_frame = tk.Frame(root)
-top_frame.pack(fill="x")
+top_frame.pack(fill="x", pady=5)
 
 # Define logged-in user
 logged_in_user = "User123"  # You can dynamically change this value
@@ -36,11 +36,16 @@ style.map("CustomNotebook.TNotebook.Tab",
 
 # Create the notebook and place it on the left side of the top_frame
 notebook = ttk.Notebook(top_frame, style="CustomNotebook.TNotebook")
-notebook.pack(side="left", fill="x", expand=True)
 
-# Create the "Logged in as <user>" label and place it on the right side of the top_frame
+# Use grid to place notebook and logged-in label in the same row
+notebook.grid(row=0, column=0, sticky="nsew", padx=(10, 0))
+
+# Create the "Logged in as <user>" label and place it in the same row
 logged_in_label = tk.Label(top_frame, text=f"Logged in as {logged_in_user}", font=("Arial", 12, "italic"))
-logged_in_label.pack(side="right", padx=10)
+logged_in_label.grid(row=0, column=1, sticky="e", padx=(10, 10))
+
+# Make sure the notebook expands properly while keeping the label to the right
+top_frame.grid_columnconfigure(0, weight=1)
 
 # Create tabs
 mapping_tab = ttk.Frame(notebook)
