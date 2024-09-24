@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import io
+import json
 import cairosvg
 
 # Create the main window
@@ -191,30 +192,45 @@ def add_target_column():
     update_delete_buttons()
 
 # Function to delete a row
-def delete_target_column(idx):
-    if len(target_columns) > 1:
-        # Remove widgets from grid and delete the row data
-        for col in target_columns[idx].values():
-            if isinstance(col, list):  # For "extra_field"
-                for widget in col:
-                    widget.grid_forget()
-            else:
-                col.grid_forget()
-        
-        # Remove the row from the lists
-        target_columns.pop(idx)
-        target_column_widgets.pop(idx)
+def delete_target_column(row_idx):
+    for widget in target_columns[row_idx].values():
+        if widget:
+            widget.grid_forget()  # Remove the widget from the grid
+    for widget in target_column_widgets[row_idx].values():
+        widget.grid_forget()  # Remove action buttons from the grid
     
-    # Rearrange remaining rows
-    for i, target_row in enumerate(target_columns):
-        for j, widget in enumerate(target_row.values()):
+    target_columns.pop(row_idx)
+    target_column_widgets.pop(row_idx)
+    
+    # Re-grid all the remaining widgets below this row
+    for i, _row in enumerate(target_columns):
+        for j, widget in enumerate(_row.values()):
             widget.grid(row=i+1, column=j, padx=5, pady=5, sticky="nsew")
     
     # Update delete button states
     update_delete_buttons()
 
+# Function to gather all data and display it as JSON
+def display_json_data():
+    data_list = []
+    for row in target_columns:
+        row_data = {}
+        for key, widget in row.items():
+            if isinstance(widget, tk.Entry):
+                row_data[key] = widget.get()
+            elif isinstance(widget, ttk.Combobox):
+                row_data[key] = widget.get()
+        data_list.append(row_data)
+
+    json_data = json.dumps(data_list, indent=4)
+    messagebox.showinfo("Mapped Data", json_data)
+
 # Initially add one row
 add_target_column()
+
+# Add "Print Data" button to show JSON data
+print_button = tk.Button(root, text="Print Data", command=display_json_data)
+print_button.pack(pady=10)
 
 # Start the main application loop
 root.mainloop()
