@@ -77,6 +77,13 @@ def limit_size(event):
     if len(event.widget.get()) > 100:
         event.widget.delete(100, tk.END)
 
+# Function to create an entry widget with a visible border
+def create_entry_with_border(parent, row, column):
+    entry = tk.Entry(parent, bd=2, relief="solid")  # Added border with 2px thickness and solid relief
+    entry.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
+    entry.bind("<KeyRelease>", limit_size)  # Bind to limit the length of input
+    return entry
+
 # Function to enable or disable delete button based on row count
 def update_delete_buttons():
     if len(target_columns) <= 1:
