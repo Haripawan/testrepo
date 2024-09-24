@@ -1,10 +1,7 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-from tkinter import filedialog
-from PIL import Image, ImageTk
-import io
+from tkinter import ttk
+from tkinter import messagebox
 import json
-import cairosvg
 
 # Create the main window
 root = tk.Tk()
@@ -17,23 +14,40 @@ logged_in_user = "User123"  # You can dynamically change this value
 logged_in_label = tk.Label(root, text=f"Logged in as {logged_in_user}", font=("Arial", 12, "italic"), anchor="w")
 logged_in_label.pack(fill="x", pady=5)
 
-# Create a notebook (tab system)
-notebook = ttk.Notebook(root)
+# Create a notebook (tab system) with a custom 3D style
+style = ttk.Style()
+
+# Set the theme to something that supports tab customization (like 'default' or 'clam')
+style.theme_use('clam')
+
+# Modify the tab style to make it 3D and distinguishable
+style.configure("CustomNotebook.TNotebook.Tab",
+                padding=[10, 5],  # Padding inside the tab
+                relief="raised",   # Raised effect (3D-like)
+                background="lightgray",  # Background color of unselected tabs
+                foreground="black",  # Text color
+                font=('Arial', 10, 'bold'))  # Font for the tabs
+
+# Modify the selected tab appearance
+style.map("CustomNotebook.TNotebook.Tab",
+          background=[("selected", "lightblue")],  # Background color when the tab is selected
+          foreground=[("selected", "darkblue")],  # Text color when selected
+          expand=[("selected", [1, 1, 1, 0])],    # Slight expansion for 3D effect
+          relief=[("selected", "solid")])         # Change the relief to a more solid look when selected
+
+# Apply the custom style to the Notebook
+notebook = ttk.Notebook(root, style="CustomNotebook.TNotebook")
 notebook.pack(fill="both", expand=True)
 
-# Function to load SVG as PhotoImage using Pillow
-def load_svg(svg_file, size=(20, 20)):
-    png_data = cairosvg.svg2png(url=svg_file, output_width=size[0], output_height=size[1])
-    img = Image.open(io.BytesIO(png_data))
-    return ImageTk.PhotoImage(img)
+# Create tabs
+mapping_tab = ttk.Frame(notebook)
+extra_field_tab = ttk.Frame(notebook)
 
-# Load action button SVGs
-plus_icon = load_svg("plus.svg")  # Replace with your file path
-delete_icon = load_svg("delete.svg")  # Replace with your file path
-tick_icon = load_svg("tick.svg")  # Replace with your file path
-pencil_icon = load_svg("pencil.svg")  # Replace with your file path
+# Add tabs to the notebook
+notebook.add(mapping_tab, text="Mapping")
+notebook.add(extra_field_tab, text="Extra Field")
 
-# Define Scrollable Frame for Mapping tab
+# Scrollable frame for Mapping tab (for additional rows or elements)
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
         super().__init__(container, *args, **kwargs)
@@ -51,194 +65,24 @@ class ScrollableFrame(ttk.Frame):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-# Create the "Mapping" tab frame
-mapping_tab = ttk.Frame(notebook)
-notebook.add(mapping_tab, text="Mapping")
-
-# Add scrollable frame to the mapping tab
+# Add the scrollable frame to the mapping tab
 scrollable_frame = ScrollableFrame(mapping_tab)
 scrollable_frame.pack(fill="both", expand=True)
 
-# Frame for the table creation and mapping functionality in the "Mapping" tab
+# You can now add content to the scrollable_frame as needed
 frame = tk.Frame(scrollable_frame.scrollable_frame)
 frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-for i in range(13):  # 13 columns (due to added fields)
-    frame.columnconfigure(i, weight=1)
-
-# Create headers for the table
+# Example headers for mapping table
 headers = ["Source Schema", "Source Table", "Source Column", "Source Type", "Mapping Type", 
            "Extra Field", "Target Schema", "Target Table", "Target Column", "Target Type", "Actions"]
 for col, header in enumerate(headers):
     tk.Label(frame, text=header, font=("Arial", 10, "bold")).grid(row=0, column=col, padx=5, pady=5, sticky="nsew")
 
-# List to store the rows (widgets) for the mapping table
-target_columns = []
-target_column_widgets = []
+# Add more code for table rows, buttons, and other features...
 
-def limit_size(event):
-    if len(event.widget.get()) > 100:
-        event.widget.delete(100, tk.END)
-
-def create_entry_with_border(parent, row, column):
-    entry = tk.Entry(parent, bd=2, relief="solid")
-    entry.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
-    entry.bind("<KeyRelease>", limit_size)
-    return entry
-
-def make_row_read_only(row_idx):
-    for entry in target_columns[row_idx].values():
-        if isinstance(entry, tk.Entry):
-            entry.config(state=tk.DISABLED)
-
-def enable_row_editing(row_idx):
-    for entry in target_columns[row_idx].values():
-        if isinstance(entry, tk.Entry):
-            entry.config(state=tk.NORMAL)
-
-def save_row(row_idx):
-    make_row_read_only(row_idx)
-    target_column_widgets[row_idx]["save_button"].grid_forget()
-    target_column_widgets[row_idx]["pencil_button"].grid(row=row_idx+1, column=10, padx=5, pady=5, sticky="nsew")
-
-def edit_row(row_idx):
-    enable_row_editing(row_idx)
-    target_column_widgets[row_idx]["pencil_button"].grid_forget()
-    target_column_widgets[row_idx]["save_button"].grid(row=row_idx+1, column=10, padx=5, pady=5, sticky="nsew")
-
-def update_delete_buttons():
-    if len(target_columns) <= 1:
-        for widget in target_column_widgets:
-            widget['delete_button'].config(state=tk.DISABLED)
-    else:
-        for widget in target_column_widgets:
-            widget['delete_button'].config(state=tk.NORMAL)
-
-def handle_mapping_type_change(row_idx):
-    mapping_type = target_columns[row_idx]["mapping_type"].get()
-    if mapping_type == "Derived":
-        if "extra_field" not in target_columns[row_idx]:
-            toggle_text_editor(row_idx)  # Create text editor when "Derived" is selected
-
-def toggle_text_editor(row_idx):
-    if "extra_field" not in target_columns[row_idx]:
-        # Create collapsible text editor for the "extra field"
-        text_editor = tk.Text(frame, height=3, width=30, bd=2, relief="solid", wrap="word")
-        text_editor.grid(row=row_idx+1, column=5, padx=5, pady=5, sticky="nsew")
-        collapse_button = tk.Button(frame, text="Collapse", command=lambda idx=row_idx: collapse_text_editor(idx))
-        collapse_button.grid(row=row_idx+1, column=6, padx=5, pady=5, sticky="nsew")
-
-        target_columns[row_idx]["extra_field"] = text_editor
-        target_column_widgets[row_idx]["collapse_button"] = collapse_button
-    else:
-        target_columns[row_idx]["extra_field"].grid(row=row_idx+1, column=5, padx=5, pady=5, sticky="nsew")
-        target_column_widgets[row_idx]["collapse_button"].grid(row=row_idx+1, column=6, padx=5, pady=5, sticky="nsew")
-
-def collapse_text_editor(row_idx):
-    target_columns[row_idx]["extra_field"].grid_forget()
-    target_column_widgets[row_idx]["collapse_button"].grid_forget()
-
-def add_target_column():
-    row = len(target_columns) + 1
-    
-    source_schema_entry = create_entry_with_border(frame, row, 0)
-    source_table_entry = create_entry_with_border(frame, row, 1)
-    source_column_entry = create_entry_with_border(frame, row, 2)
-    source_type_entry = create_entry_with_border(frame, row, 3)
-    
-    mapping_type_var = tk.StringVar()
-    mapping_type_dropdown = ttk.Combobox(frame, textvariable=mapping_type_var)
-    mapping_type_dropdown['values'] = ("Straight Move", "Derived")
-    mapping_type_dropdown.current(0)
-    mapping_type_dropdown.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
-    mapping_type_dropdown.bind("<<ComboboxSelected>>", lambda event, idx=row: handle_mapping_type_change(idx))
-
-    extra_field_entry = None
-    
-    target_schema_entry = create_entry_with_border(frame, row, 6)
-    target_table_entry = create_entry_with_border(frame, row, 7)
-    target_column_entry = create_entry_with_border(frame, row, 8)
-    target_type_entry = create_entry_with_border(frame, row, 9)
-
-    button_width = 25
-    
-    add_button = tk.Button(frame, image=plus_icon, width=button_width, height=20, command=add_target_column)
-    add_button.grid(row=row, column=11, padx=5, pady=5, sticky="nsew")
-    
-    delete_button = tk.Button(frame, image=delete_icon, width=button_width, height=20, command=lambda idx=len(target_columns): delete_target_column(idx))
-    delete_button.grid(row=row, column=12, padx=5, pady=5, sticky="nsew")
-    
-    save_button = tk.Button(frame, image=tick_icon, width=button_width, height=20, command=lambda idx=len(target_columns): save_row(idx))
-    save_button.grid(row=row, column=10, padx=5, pady=5, sticky="nsew")
-    
-    pencil_button = tk.Button(frame, image=pencil_icon, width=button_width, height=20, command=lambda idx=row-1: edit_row(idx))
-
-    target_columns.append({
-        "source_schema": source_schema_entry,
-        "source_table": source_table_entry,
-        "source_column": source_column_entry,
-        "source_type": source_type
-
-_entry,
-        "mapping_type": mapping_type_dropdown,
-        "extra_field": extra_field_entry,
-        "target_schema": target_schema_entry,
-        "target_table": target_table_entry,
-        "target_column": target_column_entry,
-        "target_type": target_type_entry,
-    })
-    
-    target_column_widgets.append({
-        "add_button": add_button,
-        "delete_button": delete_button,
-        "save_button": save_button,
-        "pencil_button": pencil_button,
-    })
-    
-    update_delete_buttons()
-
-# Function to delete target column
-def delete_target_column(row_idx):
-    # Remove all widgets in the row
-    for widget in target_columns[row_idx].values():
-        if widget:
-            widget.grid_forget()  # Remove the widget from the grid
-    for widget in target_column_widgets[row_idx].values():
-        widget.grid_forget()  # Remove action buttons from the grid
-    
-    target_columns.pop(row_idx)
-    target_column_widgets.pop(row_idx)
-    
-    # Re-grid all the remaining widgets below this row
-    for i, _row in enumerate(target_columns):
-        for j, widget in enumerate(_row.values()):
-            widget.grid(row=i+1, column=j, padx=5, pady=5, sticky="nsew")
-    
-    # Update delete button states
-    update_delete_buttons()
-
-# Function to gather all data and display it as JSON
-def display_json_data():
-    data_list = []
-    for row in target_columns:
-        row_data = {}
-        for key, widget in row.items():
-            if isinstance(widget, tk.Entry):
-                row_data[key] = widget.get()
-            elif isinstance(widget, ttk.Combobox):
-                row_data[key] = widget.get()
-            elif isinstance(widget, tk.Text):
-                row_data[key] = widget.get("1.0", "end-1c")
-        data_list.append(row_data)
-
-    json_data = json.dumps(data_list, indent=4)
-    messagebox.showinfo("Mapped Data", json_data)
-
-# Initially add one row
-add_target_column()
-
-# Add "Print Data" button to show JSON data
-print_button = tk.Button(root, text="Print Data", command=display_json_data)
+# Example Print Data button
+print_button = tk.Button(root, text="Print Data", command=lambda: messagebox.showinfo("Mapped Data", json.dumps({"example": "data"})))
 print_button.pack(pady=10)
 
 # Start the main application loop
