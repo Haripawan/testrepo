@@ -8,15 +8,16 @@ root = tk.Tk()
 root.title("Table Mapping Application")
 root.geometry("1200x600")  # Set a default size
 
-# Create a frame to hold the tabs and logged-in info in the same line
-top_frame = tk.Frame(root)
-top_frame.pack(fill="x", pady=5)
-
 # Define logged-in user
 logged_in_user = "User123"  # You can dynamically change this value
+# Add "Logged in as <user>" at the top
+logged_in_label = tk.Label(root, text=f"Logged in as {logged_in_user}", font=("Arial", 12, "italic"), anchor="w")
+logged_in_label.pack(fill="x", pady=5)
 
 # Create a notebook (tab system) with a custom 3D style
 style = ttk.Style()
+
+# Set the theme to something that supports tab customization (like 'default' or 'clam')
 style.theme_use('clam')
 
 # Modify the tab style to make it 3D and distinguishable
@@ -34,18 +35,9 @@ style.map("CustomNotebook.TNotebook.Tab",
           expand=[("selected", [1, 1, 1, 0])],    # Slight expansion for 3D effect
           relief=[("selected", "solid")])         # Change the relief to a more solid look when selected
 
-# Create the notebook and place it on the left side of the top_frame
-notebook = ttk.Notebook(top_frame, style="CustomNotebook.TNotebook")
-
-# Use grid to place notebook and logged-in label in the same row
-notebook.grid(row=0, column=0, sticky="nsew", padx=(10, 0))
-
-# Create the "Logged in as <user>" label and place it in the same row
-logged_in_label = tk.Label(top_frame, text=f"Logged in as {logged_in_user}", font=("Arial", 12, "italic"))
-logged_in_label.grid(row=0, column=1, sticky="e", padx=(10, 10))
-
-# Make sure the notebook expands properly while keeping the label to the right
-top_frame.grid_columnconfigure(0, weight=1)
+# Apply the custom style to the Notebook
+notebook = ttk.Notebook(root, style="CustomNotebook.TNotebook")
+notebook.pack(fill="both", expand=True)
 
 # Create tabs
 mapping_tab = ttk.Frame(notebook)
@@ -86,6 +78,8 @@ headers = ["Source Schema", "Source Table", "Source Column", "Source Type", "Map
            "Extra Field", "Target Schema", "Target Table", "Target Column", "Target Type", "Actions"]
 for col, header in enumerate(headers):
     tk.Label(frame, text=header, font=("Arial", 10, "bold")).grid(row=0, column=col, padx=5, pady=5, sticky="nsew")
+
+# Add more code for table rows, buttons, and other features...
 
 # Example Print Data button
 print_button = tk.Button(root, text="Print Data", command=lambda: messagebox.showinfo("Mapped Data", json.dumps({"example": "data"})))
