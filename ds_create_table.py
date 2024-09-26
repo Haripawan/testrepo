@@ -12,7 +12,7 @@ top_frame = tk.Frame(root)
 top_frame.pack(fill="x", pady=5)
 
 # Define logged-in user
-logged_in_user = "User123"  # You can dynamically change this value
+logged_in_user = "ZYXTRU10"  # You can dynamically change this value
 
 # Create a notebook (tab system) with a custom 3D style
 style = ttk.Style()
@@ -79,21 +79,43 @@ def add_column():
     key_field_option = ttk.Combobox(column_frame, values=["Yes", "No"], width=10)
     key_field_option.grid(row=row, column=3, padx=5, pady=5)
     
-    columns.append((col_name_entry, col_data_type_entry, nullable_option, key_field_option))
+    # Add action buttons (Tick, Pencil, Delete/Bin)
+    save_button = tk.Button(column_frame, text="✔", font=("Arial", 12), fg="green", width=3)
+    save_button.grid(row=row, column=4, padx=5, pady=5)
+    
+    edit_button = tk.Button(column_frame, text="✏️", font=("Arial", 12), fg="orange", width=3)
+    edit_button.grid(row=row, column=5, padx=5, pady=5)
+    
+    delete_button = tk.Button(column_frame, text="🗑️", font=("Arial", 12), fg="red", width=3)
+    delete_button.grid(row=row, column=6, padx=5, pady=5)
+    
+    columns.append((col_name_entry, col_data_type_entry, nullable_option, key_field_option, save_button, edit_button, delete_button))
 
 # Define layout for "Create Table"
 create_table_frame = tk.Frame(create_table_tab)
 create_table_frame.pack(fill="both", expand=True)
 
-# Buttons for Create and Modify Table
-create_button = tk.Button(create_table_frame, text="Create Table", command=show_create_form, width=15)
-create_button.pack(side="left", padx=10, pady=20)
+# Position the "Create Table" and "Modify Table" buttons in the top middle
+button_frame = tk.Frame(create_table_frame)
+button_frame.pack(side="top", pady=10)
 
-modify_button = tk.Button(create_table_frame, text="Modify Table", state="disabled", width=15)  # Disable Modify for now
-modify_button.pack(side="left", padx=10, pady=20)
+create_button = tk.Button(button_frame, text="Create Table", command=show_create_form, width=15)
+create_button.pack(side="left", padx=10)
+
+modify_button = tk.Button(button_frame, text="Modify Table", state="disabled", width=15)  # Disable Modify for now
+modify_button.pack(side="left", padx=10)
 
 # Table creation form (initially hidden)
 table_form = tk.Frame(create_table_tab)
+
+# Add schema dropdown before table name
+schema_label = tk.Label(table_form, text="Schema:", font=("Arial", 10))
+schema_label.pack(side="left", padx=5)
+
+schema_list = ["Schema1", "Schema2", "Schema3"]  # List of schemas
+schema_dropdown = ttk.Combobox(table_form, values=schema_list, width=20)
+schema_dropdown.pack(side="left", padx=5)
+
 tk.Label(table_form, text="Table Name:", font=("Arial", 10)).pack(side="left", padx=5)
 table_name_entry = ttk.Entry(table_form, width=30)
 table_name_entry.pack(side="left", padx=5)
