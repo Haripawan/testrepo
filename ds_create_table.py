@@ -97,7 +97,7 @@ create_table_frame.pack(fill="both", expand=True)
 
 # Position the "Create Table" and "Modify Table" buttons in the top middle
 button_frame = tk.Frame(create_table_frame)
-button_frame.pack(side="top", pady=10)
+button_frame.pack(side="top", pady=5)  # Reduced padding
 
 create_button = tk.Button(button_frame, text="Create Table", command=show_create_form, width=15)
 create_button.pack(side="left", padx=10)
@@ -106,7 +106,7 @@ modify_button = tk.Button(button_frame, text="Modify Table", state="disabled", w
 modify_button.pack(side="left", padx=10)
 
 # Table creation form (initially hidden)
-table_form = tk.Frame(create_table_tab)
+table_form = tk.Frame(create_table_frame)
 
 # Add schema dropdown before table name
 schema_label = tk.Label(table_form, text="Schema:", font=("Arial", 10))
@@ -121,7 +121,7 @@ table_name_entry = ttk.Entry(table_form, width=30)
 table_name_entry.pack(side="left", padx=5)
 
 # Frame for column details (initially hidden)
-column_frame = tk.Frame(create_table_tab)
+column_frame = tk.Frame(create_table_frame)
 
 # Column headers
 tk.Label(column_frame, text="Column Name", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=5, pady=5)
