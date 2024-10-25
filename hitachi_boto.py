@@ -237,4 +237,47 @@ except s3_client.exceptions.ClientError as e:
     print(f"Failed to retrieve ACLs: {e}")
 
 
+####### list all ACLS AND Id's ######
+
+import boto3
+from botocore.client import Config
+
+# Replace with your HCP credentials and bucket information
+HCP_ACCESS_KEY = "your-access-key"
+HCP_SECRET_KEY = "your-secret-key"
+HCP_DOMAIN = "your-hcp-domain.com"
+BUCKET_NAME = "your-bucket-name"
+
+# Initialize the boto3 client for S3 with HCP endpoint
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=HCP_ACCESS_KEY,
+    aws_secret_access_key=HCP_SECRET_KEY,
+    endpoint_url=f"https://{HCP_DOMAIN}",
+    config=Config(s3={'addressing_style': 'path'})
+)
+
+# List all objects in the bucket
+response = s3_client.list_objects_v2(Bucket=BUCKET_NAME)
+
+if 'Contents' in response:
+    for obj in response['Contents']:
+        object_key = obj['Key']
+        print(f"\nObject Key: {object_key}")
+
+        # Retrieve the ACL for each object
+        acl_response = s3_client.get_object_acl(Bucket=BUCKET_NAME, Key=object_key)
+        print("ACLs for this object:")
+        for grant in acl_response['Grants']:
+            grantee = grant['Grantee']
+            permission = grant['Permission']
+            grantee_type = grantee['Type']
+
+            # Print grantee details and permissions
+            if grantee_type == 'CanonicalUser':
+                print(f"User: {grantee.get('DisplayName', 'N/A')}, ID: {grantee['ID']}, Permission: {permission}")
+            elif grantee_type == 'Group':
+                print(f"Group: {grantee.get('URI', 'N/A')}, Permission: {permission}")
+else:
+    print("No objects found in the bucket.")
 
