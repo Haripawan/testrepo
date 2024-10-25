@@ -282,3 +282,37 @@ else:
     print("No objects found in the bucket.")
 
 ###### list users ####
+
+import requests
+from requests.auth import HTTPBasicAuth
+
+# Replace with your HCP details
+HCP_DOMAIN = "your-hcp-domain.com"  # e.g., "hcp.example.com"
+HCP_USERNAME = "admin-username"      # Administrator username
+HCP_PASSWORD = "admin-password"       # Administrator password
+
+# URL to retrieve the list of users
+url = f"https://{HCP_DOMAIN}/management/v1/users"
+
+try:
+    # Send GET request to retrieve users
+    response = requests.get(url, auth=HTTPBasicAuth(HCP_USERNAME, HCP_PASSWORD))
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        users = response.json()  # Parse JSON response
+        user_list = []
+
+        # Collect just the user IDs or display names
+        for user in users['users']:
+            user_list.append(user['displayName'])  # or user['id'] for user IDs
+
+        # Print the list of users
+        print("List of Users in the Environment:")
+        print("\n".join(user_list))
+    else:
+        print(f"Failed to retrieve users. Status Code: {response.status_code}")
+        print(f"Error Message: {response.text}")
+
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
