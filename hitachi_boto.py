@@ -1,4 +1,4 @@
-import boto3
+no import boto3
 from botocore.client import Config
 
 # Initialize the session
@@ -192,6 +192,49 @@ connection:
   aws_access_key_id: "your-access-key"
   aws_secret_access_key: "your-secret-key"
   verify_ssl: false
+
+######################
+
+import boto3
+from botocore.client import Config
+
+# Replace with your HCP details
+HCP_ACCESS_KEY = "your-access-key"
+HCP_SECRET_KEY = "your-secret-key"
+HCP_DOMAIN = "your-hcp-domain.com"  # e.g., "hcp.example.com"
+BUCKET_NAME = "your-bucket-name"
+OBJECT_KEY = "your-object-key"  # Path to the object within the bucket
+
+# Initialize the boto3 client for S3 with HCP endpoint
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=HCP_ACCESS_KEY,
+    aws_secret_access_key=HCP_SECRET_KEY,
+    endpoint_url=f"https://{HCP_DOMAIN}",
+    config=Config(s3={'addressing_style': 'path'})
+)
+
+# Retrieve the ACL for the specified object
+try:
+    acl_response = s3_client.get_object_acl(Bucket=BUCKET_NAME, Key=OBJECT_KEY)
+
+    # Print the ACL details
+    print("ACLs for the object:")
+    for grant in acl_response['Grants']:
+        grantee = grant['Grantee']
+        permission = grant['Permission']
+        grantee_type = grantee['Type']
+        
+        # Print grantee details and permissions
+        if grantee_type == 'CanonicalUser':
+            print(f"User: {grantee['DisplayName']}, Permission: {permission}")
+        elif grantee_type == 'Group':
+            print(f"Group: {grantee['URI']}, Permission: {permission}")
+
+except s3_client.exceptions.NoSuchKey:
+    print("The specified object does not exist.")
+except s3_client.exceptions.ClientError as e:
+    print(f"Failed to retrieve ACLs: {e}")
 
 
 
