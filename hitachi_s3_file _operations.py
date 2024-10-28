@@ -114,3 +114,62 @@ copy_file(bucket_name, "my-folder/file.txt", "my-folder/backup/file_copied.txt")
 # Delete a file
 delete_file(bucket_name, "my-folder/file.txt")
 
+
+import boto3
+from botocore.client import Config
+import yaml
+
+# Function to load YAML config
+def load_yaml_config(file_path):
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
+
+# Load connection parameters from the connection_config.yaml file
+connection_config = load_yaml_config('connection_config.yaml')
+
+# Initialize the S3 client using connection details from the config file
+s3_client = boto3.client(
+    's3',
+    endpoint_url=connection_config['connection']['endpoint_url'],
+    aws_access_key_id=connection_config['connection']['aws_access_key_id'],
+    aws_secret_access_key=connection_config['connection']['aws_secret_access_key'],
+    config=Config(signature_version='s3v4'),
+    verify=connection_config['connection']['verify_ssl']
+)
+
+def upload_file_with_metadata(bucket_name, object_key, file_path, custom_metadata=None):
+    try:
+        # Prepare the upload parameters
+        upload_params = {
+            'Bucket': bucket_name,
+            'Key': object_key,
+            'Filename': file_path,
+        }
+
+        # Include custom metadata if provided
+        if custom_metadata:
+            upload_params['Metadata'] = custom_metadata
+
+        # Upload the file with or without metadata
+        s3_client.upload_file(**upload_params)
+        
+        print(f"File '{file_path}' uploaded to '{bucket_name}/{object_key}' with metadata: {custom_metadata or 'None'}")
+        
+    except Exception as e:
+        print(f"An error occurred while uploading the file: {e}")
+
+# Example usage
+bucket_name = "your-bucket-name"
+object_key = "my-folder/sub-folder/file.txt"
+file_path = "/local/path/to/file.txt"
+
+# Optional custom metadata
+custom_metadata = {
+    "author": "user1",
+    "project": "project-name"
+}
+
+# Call the function to upload the file with optional custom metadata
+upload_file_with_metadata(bucket_name, object_key, file_path, custom_metadata)
+
+
