@@ -1,0 +1,160 @@
+To run these S3-compatible storage operations (e.g., upload, download, list, copy, move, delete, metadata retrieval) in Postman, you can create individual requests using the Hitachi Vantara S3-compatible API and customize them with headers and parameters to accomplish each operation. Below, I’ll go through how to set up each request in Postman.
+
+1. Setup: Base URL and Authentication
+
+	•	Base URL: Use your Hitachi Vantara endpoint (e.g., https://your-s3-endpoint).
+	•	Authentication: For S3-compatible API, you’ll typically use AWS Signature Version 4 for authentication.
+	•	In Postman, go to Authorization tab, select AWS Signature from the dropdown.
+	•	Enter your Access Key, Secret Key, Region, and Service Name (usually s3).
+
+2. Upload a File with Metadata
+
+Method: PUT
+URL: https://your-s3-endpoint/{bucket_name}/{object_key}
+
+Headers:
+
+	•	x-amz-meta-author: user1 (for custom metadata)
+	•	x-amz-meta-project: project-name
+	•	Content-Type: application/octet-stream (or appropriate file type)
+
+Body:
+
+	•	Select Binary and upload the file from your local system.
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Object Key: folder/file.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/file.txt
+
+Custom Metadata Headers:
+
+	•	Add x-amz-meta-<metadata_key> headers for each custom metadata item you want to include.
+
+3. Download a File
+
+Method: GET
+URL: https://your-s3-endpoint/{bucket_name}/{object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Object Key: folder/file.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/file.txt
+
+	•	To download, hit Send; the file contents will display as the response body. You can also save it to your local file system.
+
+4. List Files in a Folder
+
+Method: GET
+URL: https://your-s3-endpoint/{bucket_name}?prefix={folder_prefix}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Folder Prefix: folder/sub-folder/
+
+URL:
+
+https://your-s3-endpoint/my-bucket?prefix=folder/sub-folder/
+
+	•	Note: To view the files in a specific “folder,” use the prefix parameter with the folder path.
+
+5. Move (Rename) a File
+
+To move a file, you copy it to a new location and delete the original.
+
+Copy the File
+
+Method: PUT
+URL: https://your-s3-endpoint/{bucket_name}/{new_object_key}
+
+Headers:
+
+	•	x-amz-copy-source: /{bucket_name}/{source_object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Source Object Key: folder/old-file.txt
+	•	New Object Key: folder/new-folder/new-file.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/new-folder/new-file.txt
+
+Delete the Original File
+
+After copying, delete the original file.
+
+Method: DELETE
+URL: https://your-s3-endpoint/{bucket_name}/{source_object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Object Key: folder/old-file.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/old-file.txt
+
+6. Delete a File
+
+Method: DELETE
+URL: https://your-s3-endpoint/{bucket_name}/{object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Object Key: folder/file-to-delete.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/file-to-delete.txt
+
+7. Retrieve Metadata for a File
+
+Method: HEAD
+URL: https://your-s3-endpoint/{bucket_name}/{object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Object Key: folder/file.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/file.txt
+
+	•	Response Headers: The metadata will appear in the headers with the prefix x-amz-meta-.
+
+8. Copy a File
+
+Method: PUT
+URL: https://your-s3-endpoint/{bucket_name}/{destination_object_key}
+
+Headers:
+
+	•	x-amz-copy-source: /{bucket_name}/{source_object_key}
+
+Example:
+
+	•	Bucket Name: my-bucket
+	•	Source Object Key: folder/file.txt
+	•	Destination Object Key: folder/backup/file_copy.txt
+
+URL:
+
+https://your-s3-endpoint/my-bucket/folder/backup/file_copy.txt
+
+Summary
+
+Each request example should be customized with the bucket, object key, and any metadata you want to add. By using these configurations in Postman, you can perform each of the requested operations directly against your Hitachi Vantara S3-compatible storage. Let me know if there’s anything else you need to set up!
