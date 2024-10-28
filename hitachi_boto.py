@@ -316,3 +316,46 @@ try:
 
 except requests.exceptions.RequestException as e:
     print(f"An error occurred: {e}")
+    
+    
+    ###### deleating files ######
+    
+import boto3
+from botocore.client import Config
+import yaml
+
+# Function to load YAML config
+def load_yaml_config(file_path):
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
+
+# Load connection parameters from the connection_config.yaml file
+connection_config = load_yaml_config('connection_config.yaml')
+
+# Initialize the S3 client using connection details from the config file
+s3_client = boto3.client(
+    's3',
+    endpoint_url=connection_config['connection']['endpoint_url'],
+    aws_access_key_id=connection_config['connection']['aws_access_key_id'],
+    aws_secret_access_key=connection_config['connection']['aws_secret_access_key'],
+    config=Config(signature_version='s3v4'),
+    verify=connection_config['connection']['verify_ssl']
+)
+
+# Function to delete a file from the target S3 location
+def delete_file(bucket_name, object_key):
+    try:
+        # Delete the file
+        s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+        print(f"File '{object_key}' successfully deleted from bucket '{bucket_name}'")
+    except s3_client.exceptions.NoSuchKey:
+        print(f"The file '{object_key}' does not exist in bucket '{bucket_name}'")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Example usage
+bucket_name = "your-bucket-name"  # Replace with your S3 bucket name
+object_key = "my-folder/sub-folder/file_to_delete.txt"  # Replace with the file's key (path in the bucket)
+
+# Call the delete function
+delete_file(bucket_name, object_key)
