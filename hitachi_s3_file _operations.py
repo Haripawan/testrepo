@@ -54,6 +54,46 @@ def copy_file(bucket_name, source_key, destination_key):
         print(f"An error occurred while copying the file: {e}")
 
 
+def print_metadata(bucket_name, folder_prefix=None):
+    try:
+        # List all objects in the specified folder (or bucket root if folder_prefix is None)
+        list_response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=folder_prefix)
+
+        if 'Contents' in list_response:
+            for item in list_response['Contents']:
+                object_key = item['Key']
+                # Retrieve metadata for each object
+                metadata_response = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+
+                print(f"Metadata for '{object_key}':")
+                print(f"  Size: {metadata_response['ContentLength']} bytes")
+                print(f"  Last Modified: {metadata_response['LastModified']}")
+                print(f"  Content Type: {metadata_response['ContentType']}")
+
+                # Print custom metadata, if any
+                custom_metadata = metadata_response.get('Metadata', {})
+                if custom_metadata:
+                    print("  Custom Metadata:")
+                    for key, value in custom_metadata.items():
+                        print(f"    {key}: {value}")
+                else:
+                    print("  Custom Metadata: None")
+                
+                print("\n")
+        else:
+            print("No files or folders found in the specified location.")
+            
+    except Exception as e:
+        print(f"An error occurred while fetching metadata: {e}")
+
+# Example usage
+bucket_name = "your-bucket-name"
+folder_prefix = "my-folder/sub-folder/"  # Optional: specify folder path; use None for bucket root
+
+# Call the function to print metadata for all files and folders
+print_metadata(bucket_name, folder_prefix)
+
+
 bucket_name = "your-bucket-name"
 
 # Upload a file
