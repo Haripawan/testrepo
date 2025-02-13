@@ -1,15 +1,11 @@
+Got it! Here's the updated script that works with the active model and the active table in PowerDesigner:
+
+```vb
 Option Explicit
 
-Dim objPowerDesigner, objModel, objExcel, objWorkbook, objSheet, objFSO, objFile
-Dim row, fullTableName, tableName, schemaName, avroPath, column, firstColumn
-Dim table, tableFound, modelPath, outputFolder
-Dim physDataModel, targetPDM
-
-' Hardcoded PDM file location
-modelPath = "C:\models\database.pdm"
-
-' Name of the specific Physical Data Model
-targetPDM = "My_Physical_Model"  ' Change this to your actual PDM name
+Dim objPowerDesigner, objModel, objFSO, objFile
+Dim table, tableName, schemaName, avroPath, column, firstColumn
+Dim outputFolder, selectedTable
 
 ' Start PowerDesigner
 Set objPowerDesigner = CreateObject("PowerDesigner.Application")
@@ -18,31 +14,23 @@ If objPowerDesigner Is Nothing Then
     WScript.Quit
 End If
 
-' Open the PDM model
-Set objModel = objPowerDesigner.OpenModel(modelPath)
+' Get the active model
+Set objModel = objPowerDesigner.ActiveModel
 If objModel Is Nothing Then
-    MsgBox "Error: Unable to open the PDM file. Please check the path.", vbCritical
+    MsgBox "Error: No active model found.", vbCritical
     WScript.Quit
 End If
 
-' Find the Physical Data Model inside the PDM
-Set physDataModel = Nothing
-Dim subModel
-For Each subModel In objModel.Models
-    If UCase(subModel.Name) = UCase(targetPDM) Then
-        Set physDataModel = subModel
-        Exit For
-    End If
-Next
-
-If physDataModel Is Nothing Then
-    MsgBox "Error: Physical Data Model '" & targetPDM & "' not found.", vbCritical
+' Get the selected table
+Set selectedTable = objPowerDesigner.ActiveSelection.Item(0)
+If selectedTable Is Nothing Or selectedTable.ClassName <> "Table" Then
+    MsgBox "Error: No table selected or the selected item is not a table.", vbCritical
     WScript.Quit
 End If
 
-' Excel file containing table names
-Dim excelFile
-excelFile = "C:\tables.xlsx"
+' Extract schema and table name
+schemaName = selectedTable.Owner
+tableName = selectedTable.Name
 
 ' Output folder for Avro schema files
 outputFolder = "C:\AvroSchemas\"
@@ -55,83 +43,38 @@ If Not objFSO.FolderExists(outputFolder) Then
     objFSO.CreateFolder(outputFolder)
 End If
 
-' Open Excel
-On Error Resume Next
-Set objExcel = CreateObject("Excel.Application")
-If Err.Number <> 0 Then
-    MsgBox "Error: Unable to open Excel. Ensure Excel is installed.", vbCritical
-    WScript.Quit
-End If
-On Error GoTo 0
+' Generate Avro schema
+avroPath = outputFolder & "\" & schemaName & "_" & tableName & ".avsc"
+Set objFile = objFSO.CreateTextFile(avroPath, True)
+objFile.WriteLine "{"
+objFile.WriteLine """type"": ""record"","
+objFile.WriteLine """name"": """ & tableName & ""","
+objFile.WriteLine """namespace"": """ & schemaName & ""","
+objFile.WriteLine """fields"": ["
 
-objExcel.Visible = False ' Hide Excel
-Set objWorkbook = objExcel.Workbooks.Open(excelFile)
-Set objSheet = objWorkbook.Sheets(1)
+firstColumn = True
 
-' Read table names from Excel and generate Avro schema
-row = 2 ' Assuming row 1 contains headers
-
-Do While Trim(objSheet.Cells(row, 1).Value) <> ""
-    fullTableName = Trim(objSheet.Cells(row, 1).Value)
-
-    ' Extract schema and table name
-    schemaName = Split(fullTableName, ".")(0)
-    tableName = Split(fullTableName, ".")(1)
+' Extract columns for the given table
+For Each column In selectedTable.Columns
+    If Not firstColumn Then objFile.WriteLine ","
+    firstColumn = False
     
-    avroPath = outputFolder & "\" & schemaName & "_" & tableName & ".avsc"
+    objFile.WriteLine "  {"
+    objFile.WriteLine "    ""name"": """ & column.Name & ""","
+    objFile.WriteLine "    ""type"": """ & MapDataType(column.DataType) & """"
+    objFile.WriteLine "  }"
+Next
 
-    ' Check if table exists in the specific Physical Data Model
-    tableFound = False
-    For Each table In physDataModel.Tables
-        If UCase(table.Owner) = UCase(schemaName) And UCase(table.Name) = UCase(tableName) Then
-            tableFound = True
-            Exit For
-        End If
-    Next
+objFile.WriteLine "]"
+objFile.WriteLine "}"
+objFile.Close
 
-    If tableFound Then
-        ' Generate Avro schema
-        Set objFile = objFSO.CreateTextFile(avroPath, True)
-        objFile.WriteLine "{"
-        objFile.WriteLine """type"": ""record"","
-        objFile.WriteLine """name"": """ & tableName & ""","
-        objFile.WriteLine """namespace"": """ & schemaName & ""","
-        objFile.WriteLine """fields"": ["
+MsgBox "Avro schema generated: " & avroPath, vbInformation
 
-        firstColumn = True
-
-        ' Extract columns for the given table
-        For Each column In table.Columns
-            If Not firstColumn Then objFile.WriteLine ","
-            firstColumn = False
-            
-            objFile.WriteLine "  {"
-            objFile.WriteLine "    ""name"": """ & column.Name & ""","
-            objFile.WriteLine "    ""type"": """ & MapDataType(column.DataType) & """"
-            objFile.WriteLine "  }"
-        Next
-
-        objFile.WriteLine "]"
-        objFile.WriteLine "}"
-        objFile.Close
-
-        MsgBox "Avro schema generated: " & avroPath, vbInformation
-    Else
-        MsgBox "Table not found in Physical Data Model: " & fullTableName, vbExclamation
-    End If
-
-    row = row + 1
-Loop
-
-' Clean up Excel
-objWorkbook.Close False
-objExcel.Quit
-Set objExcel = Nothing
-Set objWorkbook = Nothing
-Set objSheet = Nothing
+' Clean up
+Set objPowerDesigner = Nothing
+Set objModel = Nothing
 Set objFSO = Nothing
-
-MsgBox "Process completed successfully.", vbInformation
 
 ' Function to map Oracle data types to Avro types
 Function MapDataType(oracleType)
@@ -146,3 +89,6 @@ Function MapDataType(oracleType)
             MapDataType = "string"
     End Select
 End Function
+```
+
+This version of the script will work with the currently active model and the currently selected table in PowerDesigner. Just make sure to have the table you want to work with selected before running the script. Let me know if you need further assistance!
