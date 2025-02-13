@@ -3,11 +3,15 @@ Option Explicit
 Dim objPowerDesigner, objModel, objExcel, objWorkbook, objSheet, objFSO, objFile
 Dim row, tableName, avroPath, column, firstColumn
 Dim table, tableFound, modelPath, outputFolder
+Dim physDataModel, targetPDM
 
 ' Hardcoded PDM file location
 modelPath = "C:\models\database.pdm"
 
-' Check if PowerDesigner is running
+' Name of the specific Physical Data Model to filter tables from
+targetPDM = "My_Physical_Model"  ' Change this to your actual PDM name
+
+' Start PowerDesigner
 Set objPowerDesigner = CreateObject("PowerDesigner.Application")
 If objPowerDesigner Is Nothing Then
     MsgBox "Error: PowerDesigner is not running.", vbCritical
@@ -18,6 +22,21 @@ End If
 Set objModel = objPowerDesigner.OpenModel(modelPath)
 If objModel Is Nothing Then
     MsgBox "Error: Unable to open the PDM file. Please check the path.", vbCritical
+    WScript.Quit
+End If
+
+' Find the Physical Data Model inside the PDM
+Set physDataModel = Nothing
+Dim subModel
+For Each subModel In objModel.Models
+    If UCase(subModel.Name) = UCase(targetPDM) Then
+        Set physDataModel = subModel
+        Exit For
+    End If
+Next
+
+If physDataModel Is Nothing Then
+    MsgBox "Error: Physical Data Model '" & targetPDM & "' not found.", vbCritical
     WScript.Quit
 End If
 
@@ -56,9 +75,9 @@ Do While Trim(objSheet.Cells(row, 1).Value) <> ""
     tableName = Trim(objSheet.Cells(row, 1).Value)
     avroPath = outputFolder & "\" & tableName & ".avsc"
 
-    ' Check if table exists in PowerDesigner
+    ' Check if table exists in the specific Physical Data Model
     tableFound = False
-    For Each table In objModel.Tables
+    For Each table In physDataModel.Tables
         If UCase(table.Name) = UCase(tableName) Then
             tableFound = True
             Exit For
@@ -92,7 +111,7 @@ Do While Trim(objSheet.Cells(row, 1).Value) <> ""
 
         MsgBox "Avro schema generated: " & avroPath, vbInformation
     Else
-        MsgBox "Table not found in PowerDesigner: " & tableName, vbExclamation
+        MsgBox "Table not found in Physical Data Model: " & tableName, vbExclamation
     End If
 
     row = row + 1
