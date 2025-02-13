@@ -1,0 +1,64 @@
+Option Explicit
+
+Dim model, table, column, avroFile, fso
+Set model = ActiveModel
+
+If model Is Nothing Then
+    MsgBox "No active model found!"
+    WScript.Quit
+End If
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set avroFile = fso.CreateTextFile("C:\output.avro", True)
+
+avroFile.WriteLine "{"
+avroFile.WriteLine """type"": ""record"","
+avroFile.WriteLine """name"": """ & model.Name & ""","
+avroFile.WriteLine """fields"": ["
+
+Dim firstTable
+firstTable = True
+
+For Each table In model.Tables
+    If Not firstTable Then avroFile.WriteLine ","
+    firstTable = False
+
+    avroFile.WriteLine "  {"
+    avroFile.WriteLine "    ""name"": """ & table.Name & ""","
+    avroFile.WriteLine "    ""type"": { ""type"": ""record"", ""fields"": ["
+
+    Dim firstColumn
+    firstColumn = True
+
+    For Each column In table.Columns
+        If Not firstColumn Then avroFile.WriteLine ","
+        firstColumn = False
+
+        avroFile.WriteLine "      {"
+        avroFile.WriteLine "        ""name"": """ & column.Name & ""","
+        avroFile.WriteLine "        ""type"": """ & MapDataType(column.DataType) & """"
+        avroFile.WriteLine "      }"
+    Next
+
+    avroFile.WriteLine "    ]}"
+    avroFile.WriteLine "  }"
+Next
+
+avroFile.WriteLine "]"
+avroFile.WriteLine "}"
+avroFile.Close
+
+MsgBox "Avro schema exported to C:\output.avro"
+
+Function MapDataType(oracleType)
+    Select Case UCase(oracleType)
+        Case "VARCHAR2", "CHAR", "NVARCHAR2", "CLOB"
+            MapDataType = "string"
+        Case "NUMBER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE"
+            MapDataType = "double"
+        Case "DATE", "TIMESTAMP"
+            MapDataType = "string" ' Handle as ISO date-time strings
+        Case Else
+            MapDataType = "string"
+    End Select
+End Function
