@@ -3,110 +3,110 @@ Option Explicit
 Dim objPowerDesigner, objModel, objExcel, objWorkbook, objSheet, objFSO, objFile
 Dim row, tableName, avroPath, column, firstColumn
 Dim table, tableFound, modelPath, outputFolder
-Dim dialog, fso
 
-' Ask user to select a PDM file
-Set fso = CreateObject("Scripting.FileSystemObject")
-Set dialog = CreateObject("UserAccounts.CommonDialog")
-dialog.Filter = "PowerDesigner Model Files (*.pdm)|*.pdm"
-dialog.InitialDir = "C:\"
-dialog.ShowOpen
-modelPath = dialog.FileName
+' Hardcoded PDM file location
+modelPath = "C:\models\database.pdm"
 
-' Validate model file selection
-If modelPath = "" Then
-    MsgBox "No model selected. Exiting.", vbExclamation
-Else
-    ' Open the selected PDM model
-    Set objPowerDesigner = CreateObject("PowerDesigner.Application")
-    Set objModel = objPowerDesigner.OpenModel(modelPath)
-
-    ' Validate model loading
-    If objModel Is Nothing Then
-        MsgBox "Error: Unable to open the model. Please check the file.", vbCritical
-    Else
-        ' Excel file containing table names
-        Dim excelFile
-        excelFile = "C:\tables.xlsx"
-
-        ' Output folder for Avro schema files
-        outputFolder = "C:\AvroSchemas\"
-
-        ' Create File System Object
-        Set objFSO = CreateObject("Scripting.FileSystemObject")
-
-        ' Create output folder if it doesn't exist
-        If Not objFSO.FolderExists(outputFolder) Then
-            objFSO.CreateFolder(outputFolder)
-        End If
-
-        ' Open Excel
-        On Error Resume Next
-        Set objExcel = CreateObject("Excel.Application")
-        If Err.Number <> 0 Then
-            MsgBox "Error: Unable to open Excel. Ensure Excel is installed.", vbCritical
-        Else
-            On Error GoTo 0
-
-            objExcel.Visible = False ' Hide Excel
-            Set objWorkbook = objExcel.Workbooks.Open(excelFile)
-            Set objSheet = objWorkbook.Sheets(1)
-
-            ' Read table names from Excel and generate Avro schema
-            row = 2 ' Assuming row 1 contains headers
-
-            Do While Trim(objSheet.Cells(row, 1).Value) <> ""
-                tableName = Trim(objSheet.Cells(row, 1).Value)
-                avroPath = outputFolder & tableName & ".avsc"
-
-                ' Check if table exists in PowerDesigner
-                tableFound = False
-                For Each table In objModel.Tables
-                    If UCase(table.Name) = UCase(tableName) Then
-                        tableFound = True
-                        Exit For
-                    End If
-                Next
-
-                If tableFound Then
-                    ' Generate Avro schema
-                    Set objFile = objFSO.CreateTextFile(avroPath, True)
-                    objFile.WriteLine "{"
-                    objFile.WriteLine """type"": ""record"","
-                    objFile.WriteLine """name"": """ & tableName & ""","
-                    objFile.WriteLine """fields"": ["
-
-                    firstColumn = True
-
-                    ' Extract columns for the given table
-                    For Each column In table.Columns
-                        If Not firstColumn Then objFile.WriteLine ","
-                        firstColumn = False
-                        
-                        objFile.WriteLine "  {"
-                        objFile.WriteLine "    ""name"": """ & column.Name & ""","
-                        objFile.WriteLine "    ""type"": """ & MapDataType(column.DataType) & """"
-                        objFile.WriteLine "  }"
-                    Next
-
-                    objFile.WriteLine "]"
-                    objFile.WriteLine "}"
-                    objFile.Close
-
-                    MsgBox "Avro schema generated: " & avroPath, vbInformation
-                Else
-                    MsgBox "Table not found in PowerDesigner: " & tableName, vbExclamation
-                End If
-
-                row = row + 1
-            Loop
-
-            ' Clean up Excel
-            objWorkbook.Close False
-            objExcel.Quit
-        End If
-    End If
+' Check if PowerDesigner is running
+Set objPowerDesigner = CreateObject("PowerDesigner.Application")
+If objPowerDesigner Is Nothing Then
+    MsgBox "Error: PowerDesigner is not running.", vbCritical
+    WScript.Quit
 End If
+
+' Open the PDM model
+Set objModel = objPowerDesigner.OpenModel(modelPath)
+If objModel Is Nothing Then
+    MsgBox "Error: Unable to open the PDM file. Please check the path.", vbCritical
+    WScript.Quit
+End If
+
+' Excel file containing table names
+Dim excelFile
+excelFile = "C:\tables.xlsx"
+
+' Output folder for Avro schema files
+outputFolder = "C:\AvroSchemas\"
+
+' Create File System Object
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+
+' Create output folder if it doesn't exist
+If Not objFSO.FolderExists(outputFolder) Then
+    objFSO.CreateFolder(outputFolder)
+End If
+
+' Open Excel
+On Error Resume Next
+Set objExcel = CreateObject("Excel.Application")
+If Err.Number <> 0 Then
+    MsgBox "Error: Unable to open Excel. Ensure Excel is installed.", vbCritical
+    WScript.Quit
+End If
+On Error GoTo 0
+
+objExcel.Visible = False ' Hide Excel
+Set objWorkbook = objExcel.Workbooks.Open(excelFile)
+Set objSheet = objWorkbook.Sheets(1)
+
+' Read table names from Excel and generate Avro schema
+row = 2 ' Assuming row 1 contains headers
+
+Do While Trim(objSheet.Cells(row, 1).Value) <> ""
+    tableName = Trim(objSheet.Cells(row, 1).Value)
+    avroPath = outputFolder & "\" & tableName & ".avsc"
+
+    ' Check if table exists in PowerDesigner
+    tableFound = False
+    For Each table In objModel.Tables
+        If UCase(table.Name) = UCase(tableName) Then
+            tableFound = True
+            Exit For
+        End If
+    Next
+
+    If tableFound Then
+        ' Generate Avro schema
+        Set objFile = objFSO.CreateTextFile(avroPath, True)
+        objFile.WriteLine "{"
+        objFile.WriteLine """type"": ""record"","
+        objFile.WriteLine """name"": """ & tableName & ""","
+        objFile.WriteLine """fields"": ["
+
+        firstColumn = True
+
+        ' Extract columns for the given table
+        For Each column In table.Columns
+            If Not firstColumn Then objFile.WriteLine ","
+            firstColumn = False
+            
+            objFile.WriteLine "  {"
+            objFile.WriteLine "    ""name"": """ & column.Name & ""","
+            objFile.WriteLine "    ""type"": """ & MapDataType(column.DataType) & """"
+            objFile.WriteLine "  }"
+        Next
+
+        objFile.WriteLine "]"
+        objFile.WriteLine "}"
+        objFile.Close
+
+        MsgBox "Avro schema generated: " & avroPath, vbInformation
+    Else
+        MsgBox "Table not found in PowerDesigner: " & tableName, vbExclamation
+    End If
+
+    row = row + 1
+Loop
+
+' Clean up Excel
+objWorkbook.Close False
+objExcel.Quit
+Set objExcel = Nothing
+Set objWorkbook = Nothing
+Set objSheet = Nothing
+Set objFSO = Nothing
+
+MsgBox "Process completed successfully.", vbInformation
 
 ' Function to map Oracle data types to Avro types
 Function MapDataType(oracleType)
