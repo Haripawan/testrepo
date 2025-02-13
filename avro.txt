@@ -1,26 +1,42 @@
 Option Explicit
 
-' Define required objects
-Dim objExcel, objWorkbook, objSheet, objFSO, objFile
-Dim row, tableName, avroPath, avroSchema
-Dim column, firstColumn, outputFolder
-Dim objModel, table, tableFound
+Dim objPowerDesigner, objModel, objExcel, objWorkbook, objSheet, objFSO, objFile
+Dim row, tableName, avroPath, column, firstColumn
+Dim table, tableFound, modelPath, outputFolder
+Dim dialog, fso
 
-' Get active model in PowerDesigner
-Set objModel = ActiveModel
-If objModel Is Nothing Then
-    MsgBox "Error: No active model found in PowerDesigner. Please open a PDM first.", vbCritical
+' Ask user to select a PDM file
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set dialog = CreateObject("UserAccounts.CommonDialog")
+dialog.Filter = "PowerDesigner Model Files (*.pdm)|*.pdm"
+dialog.InitialDir = "C:\"
+dialog.ShowOpen
+modelPath = dialog.FileName
+
+' Exit if no file is selected
+If modelPath = "" Then
+    MsgBox "No model selected. Exiting.", vbExclamation
     Exit Sub
 End If
 
-' Excel file path (Change if needed)
+' Open the selected PDM model
+Set objPowerDesigner = CreateObject("PowerDesigner.Application")
+Set objModel = objPowerDesigner.OpenModel(modelPath)
+
+' Check if the model was loaded successfully
+If objModel Is Nothing Then
+    MsgBox "Error: Unable to open the model. Please check the file.", vbCritical
+    Exit Sub
+End If
+
+' Excel file containing table names
 Dim excelFile
 excelFile = "C:\tables.xlsx"
 
-' Avro schema output folder (Change if needed)
+' Output folder for Avro schema files
 outputFolder = "C:\AvroSchemas\"
 
-' Create File System Object for writing files
+' Create File System Object
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 
 ' Create output folder if it doesn't exist
@@ -37,12 +53,12 @@ If Err.Number <> 0 Then
 End If
 On Error GoTo 0
 
-objExcel.Visible = False ' Set to True for debugging
+objExcel.Visible = False ' Hide Excel
 Set objWorkbook = objExcel.Workbooks.Open(excelFile)
 Set objSheet = objWorkbook.Sheets(1)
 
 ' Read table names from Excel and generate Avro schema
-row = 2 ' Assuming row 1 is headers
+row = 2 ' Assuming row 1 contains headers
 
 Do While Trim(objSheet.Cells(row, 1).Value) <> ""
     tableName = Trim(objSheet.Cells(row, 1).Value)
