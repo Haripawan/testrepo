@@ -1,55 +1,112 @@
 Option Explicit
 
-Dim model, table, column, avroFile, fso
-Set model = ActiveModel
+' Define required objects
+Dim objExcel, objWorkbook, objSheet, objPowerDesigner, objModel
+Dim objFSO, objFile
+Dim row, tableName, avroPath, avroSchema
+Dim column, firstColumn
 
-If model Is Nothing Then
-    MsgBox "No active model found!"
+' Excel file path
+Dim excelFile
+excelFile = "C:\tables.xlsx" ' Change this path if needed
+
+' Avro schema output folder
+Dim outputFolder
+outputFolder = "C:\AvroSchemas\" ' Change this path if needed
+
+' Create PowerDesigner instance
+On Error Resume Next
+Set objPowerDesigner = CreateObject("PowerDesigner.Application")
+If Err.Number <> 0 Then
+    WScript.Echo "Error: Unable to open PowerDesigner. Make sure it is installed and running."
+    WScript.Quit
+End If
+On Error GoTo 0
+
+' Get the active model
+Set objModel = objPowerDesigner.ActiveModel
+If objModel Is Nothing Then
+    WScript.Echo "Error: No active model found in PowerDesigner. Please open a model first."
     WScript.Quit
 End If
 
-Set fso = CreateObject("Scripting.FileSystemObject")
-Set avroFile = fso.CreateTextFile("C:\output.avro", True)
+' Create File System Object for writing files
+Set objFSO = CreateObject("Scripting.FileSystemObject")
 
-avroFile.WriteLine "{"
-avroFile.WriteLine """type"": ""record"","
-avroFile.WriteLine """name"": """ & model.Name & ""","
-avroFile.WriteLine """fields"": ["
+' Create output folder if it doesn't exist
+If Not objFSO.FolderExists(outputFolder) Then
+    objFSO.CreateFolder(outputFolder)
+End If
 
-Dim firstTable
-firstTable = True
+' Open Excel
+Set objExcel = CreateObject("Excel.Application")
+objExcel.Visible = False ' Set to True for debugging
+Set objWorkbook = objExcel.Workbooks.Open(excelFile)
+Set objSheet = objWorkbook.Sheets(1)
 
-For Each table In model.Tables
-    If Not firstTable Then avroFile.WriteLine ","
-    firstTable = False
+' Read table names from Excel and generate Avro schema
+row = 2 ' Assuming row 1 is headers
 
-    avroFile.WriteLine "  {"
-    avroFile.WriteLine "    ""name"": """ & table.Name & ""","
-    avroFile.WriteLine "    ""type"": { ""type"": ""record"", ""fields"": ["
+Do While objSheet.Cells(row, 1).Value <> ""
+    tableName = Trim(objSheet.Cells(row, 1).Value)
+    avroPath = outputFolder & tableName & ".avsc"
 
-    Dim firstColumn
-    firstColumn = True
-
-    For Each column In table.Columns
-        If Not firstColumn Then avroFile.WriteLine ","
-        firstColumn = False
-
-        avroFile.WriteLine "      {"
-        avroFile.WriteLine "        ""name"": """ & column.Name & ""","
-        avroFile.WriteLine "        ""type"": """ & MapDataType(column.DataType) & """"
-        avroFile.WriteLine "      }"
+    ' Check if table exists in PowerDesigner
+    Dim tableFound
+    tableFound = False
+    For Each table In objModel.Tables
+        If UCase(table.Name) = UCase(tableName) Then
+            tableFound = True
+            Exit For
+        End If
     Next
 
-    avroFile.WriteLine "    ]}"
-    avroFile.WriteLine "  }"
-Next
+    If tableFound Then
+        ' Generate Avro schema
+        Set objFile = objFSO.CreateTextFile(avroPath, True)
+        objFile.WriteLine "{"
+        objFile.WriteLine """type"": ""record"","
+        objFile.WriteLine """name"": """ & tableName & ""","
+        objFile.WriteLine """fields"": ["
 
-avroFile.WriteLine "]"
-avroFile.WriteLine "}"
-avroFile.Close
+        firstColumn = True
 
-MsgBox "Avro schema exported to C:\output.avro"
+        ' Extract columns for the given table
+        For Each column In table.Columns
+            If Not firstColumn Then objFile.WriteLine ","
+            firstColumn = False
+            
+            objFile.WriteLine "  {"
+            objFile.WriteLine "    ""name"": """ & column.Name & ""","
+            objFile.WriteLine "    ""type"": """ & MapDataType(column.DataType) & """"
+            objFile.WriteLine "  }"
+        Next
 
+        objFile.WriteLine "]"
+        objFile.WriteLine "}"
+        objFile.Close
+
+        WScript.Echo "Avro schema generated: " & avroPath
+    Else
+        WScript.Echo "Table not found in PowerDesigner: " & tableName
+    End If
+
+    row = row + 1
+Loop
+
+' Clean up
+objWorkbook.Close False
+objExcel.Quit
+Set objExcel = Nothing
+Set objWorkbook = Nothing
+Set objSheet = Nothing
+Set objPowerDesigner = Nothing
+Set objModel = Nothing
+Set objFSO = Nothing
+
+WScript.Echo "Process completed successfully."
+
+' Function to map Oracle data types to Avro types
 Function MapDataType(oracleType)
     Select Case UCase(oracleType)
         Case "VARCHAR2", "CHAR", "NVARCHAR2", "CLOB"
