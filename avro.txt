@@ -1,4 +1,18 @@
-Got it! Here's the updated script that works with the active model and the active table in PowerDesigner:
+To run the VBScript directly from within SAP PowerDesigner, you can use the Script Editor that is built into PowerDesigner. Here’s how you can do it:
+
+1. **Open PowerDesigner**: Start SAP PowerDesigner and open your model.
+
+2. **Access the Script Editor**:
+   - Go to the `Tools` menu.
+   - Select `Execute Commands`, and then `Edit/Run Script`.
+
+3. **Enter Your VBScript Code**:
+   - A script editor window will open. Copy and paste your VBScript code into this window.
+
+4. **Run the Script**:
+   - Click the `Run` button (usually represented by a green play icon) to execute the script.
+
+Here is the updated script for running within the PowerDesigner Script Editor:
 
 ```vb
 Option Explicit
@@ -7,25 +21,33 @@ Dim objPowerDesigner, objModel, objFSO, objFile
 Dim table, tableName, schemaName, avroPath, column, firstColumn
 Dim outputFolder, selectedTable
 
-' Start PowerDesigner
-Set objPowerDesigner = CreateObject("PowerDesigner.Application")
-If objPowerDesigner Is Nothing Then
-    MsgBox "Error: PowerDesigner is not running.", vbCritical
-    WScript.Quit
-End If
+' Get the PowerDesigner application object
+Set objPowerDesigner = ActivePowerDesigner
 
 ' Get the active model
 Set objModel = objPowerDesigner.ActiveModel
 If objModel Is Nothing Then
     MsgBox "Error: No active model found.", vbCritical
-    WScript.Quit
+    Exit Sub
+End If
+
+' Check if there's an active selection
+If objPowerDesigner.ActiveSelection Is Nothing Then
+    MsgBox "Error: No active selection found.", vbCritical
+    Exit Sub
+End If
+
+' Ensure there's at least one item selected
+If objPowerDesigner.ActiveSelection.Count = 0 Then
+    MsgBox "Error: No items selected.", vbCritical
+    Exit Sub
 End If
 
 ' Get the selected table
 Set selectedTable = objPowerDesigner.ActiveSelection.Item(0)
 If selectedTable Is Nothing Or selectedTable.ClassName <> "Table" Then
     MsgBox "Error: No table selected or the selected item is not a table.", vbCritical
-    WScript.Quit
+    Exit Sub
 End If
 
 ' Extract schema and table name
@@ -91,4 +113,6 @@ Function MapDataType(oracleType)
 End Function
 ```
 
-This version of the script will work with the currently active model and the currently selected table in PowerDesigner. Just make sure to have the table you want to work with selected before running the script. Let me know if you need further assistance!
+This version of the script is ready to be pasted into the PowerDesigner Script Editor and run directly. Just make sure you have the table you want to work with selected in PowerDesigner before running the script.
+
+If you need any further assistance or adjustments, just let me know!
