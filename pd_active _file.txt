@@ -22,11 +22,11 @@ If objModel Is Nothing Then
     WScript.Quit
 End If
 
-' Get selected objects from the model
-Set objSelection = objModel.GetSelectedObjects()
+' Get selected objects from the model using ActiveSelection
+Set objSelection = objPowerDesigner.ActiveSelection
 
 ' Check if any object is selected
-If objSelection.Count = 0 Then
+If objSelection Is Nothing Or objSelection.Count = 0 Then
     MsgBox "Error: No object selected in the model.", vbCritical
     WScript.Quit
 End If
@@ -66,4 +66,42 @@ If Len(fieldArray) > 0 Then fieldArray = Left(fieldArray, Len(fieldArray) - 4) &
 
 ' Close the JSON structure
 avroSchema = avroSchema & fieldArray & "  ]" & vbCrLf
-avroSchema
+avroSchema = avroSchema & "}"
+
+' Display Avro schema
+MsgBox avroSchema, vbInformation, "Avro Schema for Table: " & selectedTable.Name
+
+' Write schema to file
+outputPath = "C:\temp\" & selectedTable.Name & "_schema.avsc" ' Change path if needed
+
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Set objFile = objFSO.CreateTextFile(outputPath, True)
+objFile.Write avroSchema
+objFile.Close
+
+MsgBox "Avro schema saved to: " & outputPath, vbInformation
+
+' Cleanup
+Set objFile = Nothing
+Set objFSO = Nothing
+Set objSelection = Nothing
+Set objModel = Nothing
+Set objPowerDesigner = Nothing
+
+' Function to map PowerDesigner Data Types to Avro Data Types
+Function MapToAvroType(pdType)
+    Select Case LCase(pdType)
+        Case "integer", "smallint", "bigint"
+            MapToAvroType = "int"
+        Case "decimal", "numeric", "float", "real", "double precision"
+            MapToAvroType = "double"
+        Case "char", "varchar", "text", "nchar", "nvarchar"
+            MapToAvroType = "string"
+        Case "date", "datetime", "timestamp"
+            MapToAvroType = "string" ' Avro does not have a native date type, so store it as a string
+        Case "boolean"
+            MapToAvroType = "boolean"
+        Case Else
+            MapToAvroType = "string" ' Default type
+    End Select
+End Function
