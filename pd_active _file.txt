@@ -1,7 +1,7 @@
 Option Explicit
 
 Dim objPowerDesigner, objModel, objDiagram, objSelection, selectedTable
-Dim column, i
+Dim column, i, avroSchema, fieldArray
 
 ' Get the active PowerDesigner application instance
 Set objPowerDesigner = CreateObject("PowerDesigner.Application")
@@ -53,15 +53,64 @@ If selectedTable Is Nothing Then
     WScript.Quit
 End If
 
-' Display the selected table name
-MsgBox "Selected Table: " & selectedTable.Name
+' Build the Avro Schema
+avroSchema = "{ " & vbCrLf
+avroSchema = avroSchema & "  ""type"": ""record""," & vbCrLf
+avroSchema = avroSchema & "  ""name"": """ & selectedTable.Name & """," & vbCrLf
+avroSchema = avroSchema & "  ""fields"": [" & vbCrLf
 
-' Loop through columns of the selected table and display their names and data types
-Dim columnDetails
-columnDetails = "Columns in Table " & selectedTable.Name & ":" & vbCrLf
-
+' Process columns
+fieldArray = ""
 For Each column In selectedTable.Columns
-    columnDetails = columnDetails & "- " & column.Name & " (" & column.DataType & ")" & vbCrLf
+    Dim avroType
+    avroType = MapToAvroType(column.DataType)
+
+    fieldArray = fieldArray & "    { ""name"": """ & column.Name & """, ""type"": """ & avroType & """ }, " & vbCrLf
 Next
 
-MsgBox columnDetails, vbInformation, "Table Columns"
+' Remove last comma and newline
+If Len(fieldArray) > 0 Then fieldArray = Left(fieldArray, Len(fieldArray) - 4) & vbCrLf
+
+' Close the JSON structure
+avroSchema = avroSchema & fieldArray & "  ]" & vbCrLf
+avroSchema = avroSchema & "}"
+
+' Display Avro schema
+MsgBox avroSchema, vbInformation, "Avro Schema for Table: " & selectedTable.Name
+
+' Write schema to file
+Dim objFSO, objFile, outputPath
+outputPath = "C:\temp\" & selectedTable.Name & "_schema.avsc" ' Change this path as needed
+
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Set objFile = objFSO.CreateTextFile(outputPath, True)
+objFile.Write avroSchema
+objFile.Close
+
+MsgBox "Avro schema saved to: " & outputPath, vbInformation
+
+' Cleanup
+Set objFile = Nothing
+Set objFSO = Nothing
+Set objSelection = Nothing
+Set objDiagram = Nothing
+Set objModel = Nothing
+Set objPowerDesigner = Nothing
+
+' Function to map PowerDesigner Data Types to Avro Data Types
+Function MapToAvroType(pdType)
+    Select Case LCase(pdType)
+        Case "integer", "smallint", "bigint"
+            MapToAvroType = "int"
+        Case "decimal", "numeric", "float", "real", "double precision"
+            MapToAvroType = "double"
+        Case "char", "varchar", "text", "nchar", "nvarchar"
+            MapToAvroType = "string"
+        Case "date", "datetime", "timestamp"
+            MapToAvroType = "string" ' Avro does not have native date type, usually handled as ISO 8601 string
+        Case "boolean"
+            MapToAvroType = "boolean"
+        Case Else
+            MapToAvroType = "string" ' Default to string if unknown type
+    End Select
+End Function
