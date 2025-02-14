@@ -1,0 +1,51 @@
+Option Explicit
+
+Dim objPowerDesigner, objModel, objSelection, selectedTable
+Dim column
+
+' Get the active PowerDesigner application instance
+Set objPowerDesigner = CreateObject("PowerDesigner.Application")
+
+' Check if PowerDesigner is running
+If objPowerDesigner Is Nothing Then
+    MsgBox "Error: PowerDesigner is not running.", vbCritical
+    WScript.Quit
+End If
+
+' Check if there is an active document (model)
+If objPowerDesigner.ActiveDocument Is Nothing Then
+    MsgBox "Error: No active document is currently open.", vbCritical
+    WScript.Quit
+End If
+
+' Get the active model (PDM or logical model)
+Set objModel = objPowerDesigner.ActiveDocument
+
+' Check if an object is selected
+Set objSelection = objModel.ActiveSelection
+
+If objSelection.Count = 0 Then
+    MsgBox "Error: No object selected in the active model.", vbCritical
+    WScript.Quit
+End If
+
+' Check if the selected object is a Table
+Set selectedTable = objSelection.Item(0) ' Get the first selected object
+
+If TypeName(selectedTable) <> "Table" Then
+    MsgBox "Error: Selected object is not a Table.", vbCritical
+    WScript.Quit
+End If
+
+' Display the selected table name
+MsgBox "Selected Table: " & selectedTable.Name
+
+' Loop through columns of the selected table and display their names and data types
+Dim columnDetails
+columnDetails = "Columns in Table " & selectedTable.Name & ":" & vbCrLf
+
+For Each column In selectedTable.Columns
+    columnDetails = columnDetails & "- " & column.Name & " (" & column.DataType & ")" & vbCrLf
+Next
+
+MsgBox columnDetails, vbInformation, "Table Columns"
