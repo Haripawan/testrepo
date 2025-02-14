@@ -1,7 +1,7 @@
 Option Explicit
 
-Dim objPowerDesigner, objModel, objSelection, selectedTable
-Dim column
+Dim objPowerDesigner, objModel, objDiagram, objSelection, selectedTable
+Dim column, i
 
 ' Get the active PowerDesigner application instance
 Set objPowerDesigner = CreateObject("PowerDesigner.Application")
@@ -12,28 +12,44 @@ If objPowerDesigner Is Nothing Then
     WScript.Quit
 End If
 
-' Check if there is an active document (model)
-If objPowerDesigner.ActiveDocument Is Nothing Then
-    MsgBox "Error: No active document is currently open.", vbCritical
+' Get the active model
+Set objModel = objPowerDesigner.ActiveModel
+
+' Check if a model is open
+If objModel Is Nothing Then
+    MsgBox "Error: No active model is currently open.", vbCritical
     WScript.Quit
 End If
 
-' Get the active model (PDM or logical model)
-Set objModel = objPowerDesigner.ActiveDocument
+' Get the active diagram (needed for selection)
+Set objDiagram = objModel.ActiveDiagram
 
-' Check if an object is selected
-Set objSelection = objModel.ActiveSelection
+' Check if there is an active diagram
+If objDiagram Is Nothing Then
+    MsgBox "Error: No active diagram found. Please open a diagram.", vbCritical
+    WScript.Quit
+End If
 
+' Get the selected objects from the active diagram
+Set objSelection = objDiagram.GetSelectedObjects
+
+' Check if any object is selected
 If objSelection.Count = 0 Then
-    MsgBox "Error: No object selected in the active model.", vbCritical
+    MsgBox "Error: No object selected in the active diagram.", vbCritical
     WScript.Quit
 End If
 
-' Check if the selected object is a Table
-Set selectedTable = objSelection.Item(0) ' Get the first selected object
+' Loop through selected objects to find a Table
+For i = 0 To objSelection.Count - 1
+    If TypeName(objSelection.Item(i)) = "Table" Then
+        Set selectedTable = objSelection.Item(i)
+        Exit For
+    End If
+Next
 
-If TypeName(selectedTable) <> "Table" Then
-    MsgBox "Error: Selected object is not a Table.", vbCritical
+' Check if a table was found in the selection
+If selectedTable Is Nothing Then
+    MsgBox "Error: No table selected. Please select a table.", vbCritical
     WScript.Quit
 End If
 
