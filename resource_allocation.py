@@ -5,13 +5,13 @@ import pandas as pd
 project_variance_percent = 3  # ±3% for project budgets
 overall_variance_percent = 5  # ±5% for total budget
 
-# Sample input data (scalable to more employees/projects)
+# Employee and project data
 employees = [
-    {'name': 'Alice', 'cost': 5000},
-    {'name': 'Bob', 'cost': 4000},
-    {'name': 'Charlie', 'cost': 4500},
-    {'name': 'David', 'cost': 5500},
-    {'name': 'Eve', 'cost': 6000}
+    {'name': 'Alice', 'cost': 5000, 'is_lead': True},
+    {'name': 'Bob', 'cost': 4000, 'is_lead': False},
+    {'name': 'Charlie', 'cost': 4500, 'is_lead': False},
+    {'name': 'David', 'cost': 5500, 'is_lead': True},
+    {'name': 'Eve', 'cost': 6000, 'is_lead': False}
 ]
 
 projects = [
@@ -23,13 +23,11 @@ projects = [
 # Prepare data structures
 employee_names = [e['name'] for e in employees]
 project_ids = [p['id'] for p in projects]
-months = range(1, 13)  # 1 = January, 12 = December
+months = range(1, 13)  # 1 = Jan, 12 = Dec
 month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 project_active_months = {p['id']: list(range(p['start_month'], p['end_month'] + 1)) for p in projects}
 employees_dict = {e['name']: e for e in employees}
 projects_dict = {p['id']: p for p in projects}
-
-# Calculate total budget
 total_budget = sum(p['budget'] for p in projects)
 
 # Define the LP problem
@@ -43,7 +41,7 @@ A = pulp.LpVariable.dicts(
     upBound=1
 )
 
-# Objective: Maximize total allocation (encourages full utilization)
+# Objective: Maximize total allocation
 prob += pulp.lpSum(A[(e, p, m)] for e in employee_names for p in project_ids for m in project_active_months[p])
 
 # Constraints
@@ -51,10 +49,10 @@ prob += pulp.lpSum(A[(e, p, m)] for e in employee_names for p in project_ids for
 for e in employee_names:
     for m in months:
         active_projects = [p for p in project_ids if m in project_active_months[p]]
-        if active_projects:  # Only add constraint if there are active projects
+        if active_projects:
             prob += pulp.lpSum(A[(e, p, m)] for p in active_projects) == 1, f"Availability_{e}_{m}"
 
-# 2. Project budget: Total cost within ±project_variance_percent
+# 2. Project budget: Total cost within ±3%
 for p in project_ids:
     total_cost = pulp.lpSum(
         A[(e, p, m)] * employees_dict[e]['cost']
@@ -66,7 +64,7 @@ for p in project_ids:
     prob += total_cost >= lower_bound, f"Budget_Lower_{p}"
     prob += total_cost <= upper_bound, f"Budget_Upper_{p}"
 
-# 3. Overall budget: Total cost within ±overall_variance_percent
+# 3. Overall budget: Total cost within ±5%
 total_allocation_cost = pulp.lpSum(
     A[(e, p, m)] * employees_dict[e]['cost']
     for e in employee_names
@@ -78,14 +76,25 @@ total_upper_bound = total_budget * (1 + overall_variance_percent / 100)
 prob += total_allocation_cost >= total_lower_bound, "Total_Budget_Lower"
 prob += total_allocation_cost <= total_upper_bound, "Total_Budget_Upper"
 
+# 4. Lead constraint: Leads must be allocated to at least 2 projects
+for e in employee_names:
+    if employees_dict[e]['is_lead']:
+        # Binary variable: 1 if employee e is allocated to project p, 0 otherwise
+        B = pulp.LpVariable.dicts(f"B_{e}", project_ids, cat='Binary')
+        for p in project_ids:
+            # Link B[e, p] to A[e, p, m]: B = 1 if any allocation > 0
+            prob += B[p] <= pulp.lpSum(A[(e, p, m)] for m in project_active_months[p]), f"Link_B_{e}_{p}"
+            prob += B[p] >= pulp.lpSum(A[(e, p, m)] for m in project_active_months[p]) / 100, f"Force_B_{e}_{p}"
+        # Ensure at least 2 projects
+        prob += pulp.lpSum(B[p] for p in project_ids) >= 2, f"Lead_Allocation_{e}"
+
 # Solve the problem
 prob.solve()
 
-# Check solution status
+# Output results
 if pulp.LpStatus[prob.status] != 'Optimal':
-    print("No optimal solution found. Adjust budgets or variances.")
+    print("No optimal solution found. Adjust budgets or constraints.")
 else:
-    # Extract results
     results = []
     for e in employee_names:
         for p in project_ids:
@@ -98,7 +107,7 @@ else:
                     total_cost += (alloc or 0) * employees_dict[e]['cost']
                 else:
                     allocations.append(0)
-            if total_cost > 0:  # Only include rows with actual allocations
+            if total_cost > 0:
                 results.append({
                     'Resource': e,
                     'Project': projects_dict[p]['name'],
@@ -107,7 +116,6 @@ else:
                     'Total Cost': round(total_cost, 2)
                 })
 
-    # Load into a pandas DataFrame
     df = pd.DataFrame(results)
     print("\nResource Allocation Results:")
     print(df)
