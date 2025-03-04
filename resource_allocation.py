@@ -1,35 +1,29 @@
 import pulp
 import pandas as pd
-import sys
 
-# Configurable variance percentages (in percent)
-project_variance_percent = 3  # Adjust this value as needed (e.g., 3 for ±3%)
-overall_variance_percent = 5  # Adjust this value as needed (e.g., 5 for ±5%)
+# Configurable variance percentages
+project_variance_percent = 3  # ±3% for project budgets
+overall_variance_percent = 5  # ±5% for total budget
 
-# Optional: Uncomment to use command-line arguments
-# if len(sys.argv) == 3:
-#     project_variance_percent = float(sys.argv[1])
-#     overall_variance_percent = float(sys.argv[2])
-
-# Display the configured variances
-print(f"Project Variance: ±{project_variance_percent}%")
-print(f"Overall Variance: ±{overall_variance_percent}%")
-
-# Sample input data
+# Sample input data (scalable to more employees/projects)
 employees = [
-    {'name': 'Alice', 'cost': 5000, 'is_lead': True},
-    {'name': 'Bob', 'cost': 4000, 'is_lead': False},
-    {'name': 'Charlie', 'cost': 4500, 'is_lead': False}
+    {'name': 'Alice', 'cost': 5000},
+    {'name': 'Bob', 'cost': 4000},
+    {'name': 'Charlie', 'cost': 4500},
+    {'name': 'David', 'cost': 5500},
+    {'name': 'Eve', 'cost': 6000}
 ]
+
 projects = [
-    {'id': 1, 'name': 'Project A', 'start_month': 3, 'end_month': 7, 'budget': 60000},
-    {'id': 2, 'name': 'Project B', 'start_month': 1, 'end_month': 12, 'budget': 150000}
+    {'id': 1, 'name': 'Project A', 'start_month': 3, 'end_month': 7, 'budget': 70000},
+    {'id': 2, 'name': 'Project B', 'start_month': 1, 'end_month': 12, 'budget': 160000},
+    {'id': 3, 'name': 'Project C', 'start_month': 6, 'end_month': 9, 'budget': 70000}
 ]
 
 # Prepare data structures
 employee_names = [e['name'] for e in employees]
 project_ids = [p['id'] for p in projects]
-months = range(1, 13)  # January (1) to December (12)
+months = range(1, 13)  # 1 = January, 12 = December
 month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 project_active_months = {p['id']: list(range(p['start_month'], p['end_month'] + 1)) for p in projects}
 employees_dict = {e['name']: e for e in employees}
@@ -41,7 +35,7 @@ total_budget = sum(p['budget'] for p in projects)
 # Define the LP problem
 prob = pulp.LpProblem("Resource_Allocation", pulp.LpMaximize)
 
-# Variables: A[e, p, m] = allocation of employee e to project p in month m (0 to 1)
+# Variables: A[e, p, m] = allocation fraction for employee e, project p, month m
 A = pulp.LpVariable.dicts(
     "A",
     [(e, p, m) for e in employee_names for p in project_ids for m in project_active_months[p]],
@@ -49,18 +43,18 @@ A = pulp.LpVariable.dicts(
     upBound=1
 )
 
-# Objective: Maximize total allocation
+# Objective: Maximize total allocation (encourages full utilization)
 prob += pulp.lpSum(A[(e, p, m)] for e in employee_names for p in project_ids for m in project_active_months[p])
 
 # Constraints
-# 1. Employee availability: 100% allocation per month
+# 1. Employee availability: Sum of allocations per month = 1
 for e in employee_names:
     for m in months:
         active_projects = [p for p in project_ids if m in project_active_months[p]]
-        if active_projects:
+        if active_projects:  # Only add constraint if there are active projects
             prob += pulp.lpSum(A[(e, p, m)] for p in active_projects) == 1, f"Availability_{e}_{m}"
 
-# 2. Project budget: Within ±project_variance_percent of project budget
+# 2. Project budget: Total cost within ±project_variance_percent
 for p in project_ids:
     total_cost = pulp.lpSum(
         A[(e, p, m)] * employees_dict[e]['cost']
@@ -72,7 +66,7 @@ for p in project_ids:
     prob += total_cost >= lower_bound, f"Budget_Lower_{p}"
     prob += total_cost <= upper_bound, f"Budget_Upper_{p}"
 
-# 3. Overall budget: Within ±overall_variance_percent of total budget
+# 3. Overall budget: Total cost within ±overall_variance_percent
 total_allocation_cost = pulp.lpSum(
     A[(e, p, m)] * employees_dict[e]['cost']
     for e in employee_names
@@ -87,9 +81,9 @@ prob += total_allocation_cost <= total_upper_bound, "Total_Budget_Upper"
 # Solve the problem
 prob.solve()
 
-# Check for solution
+# Check solution status
 if pulp.LpStatus[prob.status] != 'Optimal':
-    print("No optimal solution found.")
+    print("No optimal solution found. Adjust budgets or variances.")
 else:
     # Extract results
     results = []
@@ -104,7 +98,7 @@ else:
                     total_cost += (alloc or 0) * employees_dict[e]['cost']
                 else:
                     allocations.append(0)
-            if total_cost > 0:
+            if total_cost > 0:  # Only include rows with actual allocations
                 results.append({
                     'Resource': e,
                     'Project': projects_dict[p]['name'],
@@ -113,6 +107,7 @@ else:
                     'Total Cost': round(total_cost, 2)
                 })
 
-    # Load into a pandas DataFrame and print
+    # Load into a pandas DataFrame
     df = pd.DataFrame(results)
+    print("\nResource Allocation Results:")
     print(df)
