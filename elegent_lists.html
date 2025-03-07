@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elegant Tree Structure</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --hover-color: #2980b9;
+            --bg-color: #f8f9fa;
+            --item-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --text-color: #2c3e50;
+            --icon-color: #7f8c8d;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 20px;
+            margin: 0;
+        }
+
+        .tree-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--item-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        .tree-title {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .tree {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .tree-node {
+            margin: 8px 0;
+            border-left: 2px solid transparent;
+            transition: border-color var(--transition-speed);
+        }
+
+        .tree-node:hover {
+            border-left-color: var(--primary-color);
+        }
+
+        .tree-node span {
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            transition: background-color var(--transition-speed);
+        }
+
+        .tree-node span:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .tree-node a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: color var(--transition-speed);
+            display: block;
+            width: 100%;
+        }
+        
+        .tree-node a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .tree-node span::before {
+            content: "";
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath fill='%237f8c8d' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: transform var(--transition-speed);
+        }
+
+        .tree-node.collapsed span::before {
+            transform: rotate(-90deg);
+        }
+
+        .tree-node.leaf span::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath fill='%237f8c8d' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'/%3E%3C/svg%3E");
+            transform: none;
+        }
+
+        .tree-children {
+            list-style-type: none;
+            padding-left: 20px;
+            overflow: hidden;
+            max-height: 1000px; /* Arbitrary large value */
+            transition: max-height 0.5s ease-in-out;
+        }
+
+        .tree-node.collapsed > .tree-children {
+            max-height: 0;
+        }
+
+        /* Additional styling for different levels */
+        .tree-node.level-1 > span {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .tree-node.level-2 > span {
+            font-weight: 500;
+        }
+
+        /* Loading animation */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--icon-color);
+        }
+
+        .loading::after {
+            content: "Loading...";
+            display: inline-block;
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: "Loading."; }
+            40% { content: "Loading.."; }
+            60%, 100% { content: "Loading..."; }
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* Dark theme */
+        body.dark-theme {
+            --primary-color: #60a5fa;
+            --hover-color: #3b82f6;
+            --bg-color: #1a202c;
+            --item-bg: #2d3748;
+            --border-color: #4a5568;
+            --text-color: #e2e8f0;
+            --icon-color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light theme">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+    </button>
+
+    <div class="tree-container">
+        <h1 class="tree-title">Elegant Tree Structure</h1>
+        <div id="treeRoot">
+            <div class="loading"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sample JSON data - replace this with your actual data source
+        const treeData = {
+            name: "Root",
+            children: [
+                {
+                    name: "Category 1",
+                    children: [
+                        { name: "Item 1.1", url: "https://example.com/1-1" },
+                        { name: "Item 1.2", url: "https://example.com/1-2" },
+                        { 
+                            name: "Item 1.3",
+                            children: [
+                                { name: "Item 1.3.1", url: "https://example.com/1-3-1" },
+                                { name: "Item 1.3.2", url: "https://example.com/1-3-2" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Category 2",
+                    children: [
+                        { name: "Item 2.1", url: "https://example.com/2-1" },
+                        { 
+                            name: "Item 2.2",
+                            children: [
+                                { name: "Item 2.2.1", url: "https://example.com/2-2-1" },
+                                { name: "Item 2.2.2", url: "https://example.com/2-2-2" },
+                                { 
+                                    name: "Item 2.2.3",
+                                    children: [
+                                        { name: "Item 2.2.3.1", url: "https://example.com/2-2-3-1" },
+                                        { name: "Item 2.2.3.2", url: "https://example.com/2-2-3-2" }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                { name: "Category 3", url: "https://example.com/3" }
+            ]
+        };
+
+        // Function to create the tree structure
+        function createTree(data, level = 1) {
+            const ul = document.createElement('ul');
+            ul.className = 'tree';
+            if (level === 1) {
+                ul.id = 'mainTree';
+            }
+
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.className = `tree-node level-${level}`;
+                
+                if (!item.children || item.children.length === 0) {
+                    li.classList.add('leaf');
+                } else {
+                    li.classList.add('collapsed');
+                }
+
+                const span = document.createElement('span');
+                if (item.url) {
+                    // Create hyperlink for items with URLs
+                    const a = document.createElement('a');
+                    a.href = item.url;
+                    a.textContent = item.name;
+                    span.appendChild(a);
+                    
+                    // For parent nodes with children and URLs
+                    if (item.children && item.children.length > 0) {
+                        // Attach the click event to span to allow toggling
+                        span.addEventListener('click', (e) => {
+                            // Only toggle if we click on the span but not directly on the link
+                            if (e.target === span) {
+                                li.classList.toggle('collapsed');
+                            }
+                        });
+                        
+                        // Prevent the default behavior when clicking on the toggle icon
+                        span.querySelector('a').addEventListener('click', (e) => {
+                            e.stopPropagation(); // Don't trigger the span's click event
+                        });
+                    }
+                } else {
+                    // For items without URLs, just show text
+                    span.textContent = item.name;
+                    span.addEventListener('click', () => {
+                        if (!li.classList.contains('leaf')) {
+                            li.classList.toggle('collapsed');
+                        }
+                    });
+                }
+                li.appendChild(span);
+
+                if (item.children && item.children.length > 0) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'tree-children';
+                    childrenContainer.appendChild(createTree(item.children, level + 1));
+                    li.appendChild(childrenContainer);
+                }
+
+                ul.appendChild(li);
+            });
+
+            return ul;
+        }
+
+        // Function to initialize the tree
+        function initializeTree() {
+            const treeRoot = document.getElementById('treeRoot');
+            treeRoot.innerHTML = '';  // Clear loading animation
+            
+            if (treeData.children && treeData.children.length > 0) {
+                const rootNode = document.createElement('li');
+                rootNode.className = 'tree-node level-0';
+                
+                const rootSpan = document.createElement('span');
+                if (treeData.url) {
+                    const a = document.createElement('a');
+                    a.href = treeData.url;
+                    a.textContent = treeData.name;
+                    rootSpan.appendChild(a);
+                    
+                    // For the root with URL, handle click events separately
+                    rootSpan.addEventListener('click', (e) => {
+                        if (e.target === rootSpan) {
+                            rootNode.classList.toggle('collapsed');
+                        }
+                    });
+                } else {
+                    rootSpan.textContent = treeData.name;
+                    rootSpan.addEventListener('click', () => {
+                        rootNode.classList.toggle('collapsed');
+                    });
+                }
+                rootNode.appendChild(rootSpan);
+                
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-children';
+                childrenContainer.appendChild(createTree(treeData.children));
+                rootNode.appendChild(childrenContainer);
+                
+                const rootUl = document.createElement('ul');
+                rootUl.className = 'tree';
+                rootUl.appendChild(rootNode);
+                treeRoot.appendChild(rootUl);
+            } else {
+                treeRoot.textContent = 'No data available';
+            }
+        }
+
+        // Simulate loading data from an API or file
+        setTimeout(initializeTree, 500);
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            
+            // Update the toggle icon for dark/light mode
+            if (document.body.classList.contains('dark-theme')) {
+                themeToggle.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                `;
+            } else {
+                themeToggle.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                `;
+            }
+        });
+
+        // Function to load tree data from external JSON
+        function loadExternalJSON(url) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    treeData = data;
+                    initializeTree();
+                })
+                .catch(error => {
+                    console.error('Error loading JSON:', error);
+                    document.getElementById('treeRoot').textContent = 'Error loading data';
+                });
+        }
+
+        // To use external JSON, uncomment and modify the following line:
+        // loadExternalJSON('path/to/your/tree-data.json');
+    </script>
+</body>
+</html>
