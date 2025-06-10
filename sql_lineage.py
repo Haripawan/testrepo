@@ -352,3 +352,124 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
+    
+    
+import sql_metadata
+from sql_metadata.parser import Parser
+
+def get_column_lineage(sql_query: str):
+    """
+    Parses a SQL query to extract column-level lineage.
+
+    Args:
+        sql_query: The SQL query string to analyze.
+
+    Returns:
+        A list of dictionaries, where each dictionary represents a
+        lineage path from a source column to a target column, including
+        the transformation logic.
+    """
+    lineage = []
+    try:
+        parser = Parser(sql_query)
+        
+        # Check if column lineage is available
+        if not hasattr(parser, 'columns_aliases_names') or not parser.columns_aliases_names:
+             # Fallback for simpler queries or when direct lineage isn't obvious
+            source_columns = parser.columns
+            target_columns = parser.columns
+            source_tables = parser.tables
+            
+            if len(source_tables) == 1:
+                target_table = source_tables[0]
+            else:
+                target_table = "result_set"
+
+
+            for i in range(len(source_columns)):
+                 lineage.append({
+                    "source_table": source_tables[i] if i < len(source_tables) else target_table,
+                    "source_column": source_columns[i],
+                    "transformation_logic": "Direct Mapping",
+                    "target_table": target_table,
+                    "target_column": target_columns[i]
+                })
+            return lineage
+
+
+        # Extracting detailed column lineage
+        for target_col, source_cols in parser.columns_aliases.items():
+            for source_col in source_cols:
+                source_table = None
+                # Find the table for the source column
+                for table, columns in parser.tables_aliases.items():
+                    if source_col in columns:
+                        source_table = table
+                        break
+                
+                transformation = "Direct Mapping"
+                if source_col not in parser.columns:
+                    transformation = source_col # The expression is the transformation
+
+                lineage.append({
+                    "source_table": source_table,
+                    "source_column": source_col,
+                    "transformation_logic": transformation,
+                    "target_table": "result_set",  # Or determine from INSERT/CREATE
+                    "target_column": target_col
+                })
+
+    except Exception as e:
+        print(f"An error occurred during parsing: {e}")
+        return None
+
+    return lineage
+
+if __name__ == '__main__':
+    complex_sql = """
+    WITH regional_sales AS (
+        SELECT
+            r.name AS region,
+            p.category,
+            SUM(s.amount) AS total_sales
+        FROM sales s
+        JOIN products p ON s.product_id = p.id
+        JOIN regions r ON s.region_id = r.id
+        WHERE s.sale_date >= '2023-01-01'
+        GROUP BY r.name, p.category
+    ),
+    top_categories AS (
+        SELECT
+            region,
+            category,
+            total_sales,
+            ROW_NUMBER() OVER(PARTITION BY region ORDER BY total_sales DESC) as rn
+        FROM regional_sales
+    )
+    INSERT INTO final_report (report_region, product_category, sales_figure, report_notes)
+    SELECT
+        tc.region,
+        tc.category,
+        tc.total_sales,
+        CONCAT('Top category in ', tc.region)
+    FROM top_categories tc
+    WHERE tc.rn = 1;
+    """
+
+    lineage_data = get_column_lineage(complex_sql)
+
+    if lineage_data:
+        print("SQL Column Lineage:")
+        for item in lineage_data:
+            print(
+                f"  Source: {item['source_table']}.{item['source_column']}\n"
+                f"  Transformation: '{item['transformation_logic']}'\n"
+                f"  Target: {item['target_table']}.{item['target_column']}\n"
+                f"-------------------"
+            )
+
+
