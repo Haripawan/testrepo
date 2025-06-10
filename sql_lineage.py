@@ -219,3 +219,136 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
+#!/usr/bin/env python3
+"""
+column_lineage_with_transforms.py
+
+Extract column-level lineage + transformation logic from any SQL
+(using sqllineage + sqlglot), then output to Excel.
+
+Dependencies:
+    pip install sqllineage sqlglot pandas openpyxl
+"""
+
+import argparse
+import sys
+
+import pandas as pd
+import sqlglot
+from sqlglot import exp, parse_one
+from sqllineage.runner import LineageRunner
+
+
+def extract_transforms(sql: str, dialect: str = "default"):
+    """
+    Parse the outermost SELECT (or INSERT…SELECT) and build a dict:
+       target_column -> transformation_sql
+
+    If the projection is simply `col` or `tbl.col`, we record "IDENTITY".
+    """
+    tree = parse_one(sql, read=dialect)
+
+    # If it's an INSERT, dive into its SELECT
+    select = tree.find(exp.Select)
+    if select is None:
+        raise ValueError("No SELECT found in SQL")
+
+    transforms = {}
+    for proj in select.expressions:
+        tgt = proj.alias_or_name
+        # If the projection is a direct column ref with no functions/operators:
+        if isinstance(proj, exp.Column):
+            transforms[tgt] = "IDENTITY"
+        else:
+            # Otherwise pretty‑print the projection expression
+            transforms[tgt] = proj.sql(dialect=dialect)
+    return transforms
+
+
+def extract_column_lineage_with_transforms(
+    sql: str,
+    default_target: str = None,
+    dialect: str = "default"
+) -> pd.DataFrame:
+    """
+    Returns a DataFrame with columns:
+      source_table, source_column, target_table, target_column, transformation
+    """
+    # 1) Get raw column lineage pairs
+    runner = LineageRunner(sql)
+    col_pairs = runner.get_column_lineage()
+
+    # 2) Determine target table (from INSERT) or fallback
+    tree = parse_one(sql, read=dialect)
+    insert = tree.find(exp.Insert)
+    if insert:
+        target_table = insert.this.name
+    else:
+        target_table = default_target
+
+    # 3) Fetch transformation snippets
+    transforms = extract_transforms(sql, dialect=dialect)
+
+    # 4) Build rows
+    rows = []
+    for src_col, tgt_col in col_pairs:
+        rows.append({
+            "source_table": src_col.table,
+            "source_column": src_col.name,
+            "target_table": target_table,
+            "target_column": tgt_col.name,
+            "transformation": transforms.get(tgt_col.name, "IDENTITY")
+        })
+
+    return pd.DataFrame(rows)
+
+
+def to_excel(df: pd.DataFrame, path: str):
+    """Write the lineage+transform DataFrame to Excel."""
+    df.to_excel(path, index=False)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Extract column-level lineage + transforms using sqllineage + sqlglot"
+    )
+    parser.add_argument(
+        "--sql-file", required=True,
+        help="Path to the .sql file (INSERT ... SELECT or SELECT)"
+    )
+    parser.add_argument(
+        "--default-target", default=None,
+        help="If no INSERT, use this as the target table name"
+    )
+    parser.add_argument(
+        "--dialect", default="default",
+        help="sqlglot dialect (mysql, hive, oracle, tsql, etc.)"
+    )
+    parser.add_argument(
+        "--output", default="column_lineage.xlsx",
+        help="Output Excel filename"
+    )
+    args = parser.parse_args()
+
+    try:
+        sql_text = open(args.sql_file, encoding="utf-8").read()
+    except Exception as e:
+        print(f"ERROR reading SQL file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    df = extract_column_lineage_with_transforms(
+        sql=sql_text,
+        default_target=args.default_target,
+        dialect=args.dialect
+    )
+
+    to_excel(df, args.output)
+    print(f"✅ Written column‑level lineage + transforms to {args.output}")
+
+
+if __name__ == "__main__":
+    main()
