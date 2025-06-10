@@ -3,8 +3,8 @@
 sql_lineage_extractor.py
 
 A self‑contained script to extract column‑level lineage, filters, and joins
-from any complex SQL (INSERT or SELECT), for a specified SQL dialect,
-and write the results to an Excel workbook.
+from any complex SQL (INSERT or SELECT), including WITH/CTE support, for a
+specified SQL dialect, and write the results to an Excel workbook.
 
 Dependencies:
     pip install sqlglot pandas openpyxl
@@ -24,6 +24,8 @@ class SQLLineageExtractor:
         :param dialect: SQL dialect (e.g. 'oracle', 'hive', 'tsql', 'mysql', 'postgres', ...)
         """
         self.dialect = dialect
+        # Will hold CTE definitions: name -> SELECT AST
+        self.ctes = {}
 
     def extract(self, sql: str, default_target: str = None):
         """
@@ -32,15 +34,30 @@ class SQLLineageExtractor:
           2. filters_df: all WHERE predicates
           3. joins_df: all JOIN conditions
 
-        :param sql:       SQL statement (INSERT ... SELECT or raw SELECT)
+        :param sql:       SQL statement (INSERT ... SELECT or raw SELECT, possibly with WITH)
         :param default_target: if no INSERT, use this as the "target table" (e.g. filename)
         """
+        # 1. Parse to AST
         tree = parse_one(sql, read=self.dialect)
 
-        target_table, target_columns = self._find_target(tree, default_target)
-        lineage_records = []
+        # 2. Extract any WITH / CTE definitions
+        with_expr = tree.find(exp.With)
+        if with_expr:
+            # Map each CTE alias -> its SELECT AST
+            for cte in with_expr.expressions:
+                # cte.alias is an exp.TableAlias; its name is the CTE name
+                alias = cte.alias_or_name
+                self.ctes[alias] = cte.this  # the SELECT (or other) expression
+            # The real query is the 'this' of the WITH node
+            tree = with_expr.this
+        else:
+            self.ctes = {}
 
-        # Walk all SELECT projections
+        # 3. Determine target table & columns
+        target_table, _ = self._find_target(tree, default_target)
+
+        # 4. Walk SELECT projections to build lineage
+        lineage_records = []
         for select in tree.find_all(exp.Select):
             for proj in select.expressions:
                 tgt_col = proj.alias_or_name
@@ -55,23 +72,26 @@ class SQLLineageExtractor:
                         "target_column": tgt_col
                     })
 
-        # Extract filters
+        # 5. Extract filters
         filters = []
         for where in tree.find_all(exp.Where):
             filters.append({
                 "predicate": where.this.sql(dialect=self.dialect)
             })
 
-        # Extract joins
+        # 6. Extract joins
         joins = []
         for join in tree.find_all(exp.Join):
             kind = join.args.get("kind", "JOIN")
-            condition = join.on.this.sql(dialect=self.dialect) if join.on else None
+            condition = None
+            if join.on and isinstance(join.on, exp.On):
+                condition = join.on.this.sql(dialect=self.dialect)
             joins.append({
                 "join_type": kind.upper(),
                 "condition": condition
             })
 
+        # 7. Build DataFrames
         lineage_df = pd.DataFrame(lineage_records)
         filters_df = pd.DataFrame(filters)
         joins_df = pd.DataFrame(joins)
@@ -93,40 +113,65 @@ class SQLLineageExtractor:
 
     def _extract_transform_steps(self, expr: exp.Expression):
         """
-        Collect each Func or operator node as a transformation step.
+        Collect each Func, Cast, Case, or If node as a transformation step.
         Returns a list of SQL snippets in evaluation order.
         """
         steps = []
         for node in expr.walk():
-            if isinstance(node, exp.Func):
-                steps.append(node.sql(dialect=self.dialect))
-            elif isinstance(node, (exp.Cast, exp.Case, exp.If)):
+            if isinstance(node, exp.Func) \
+               or isinstance(node, exp.Cast) \
+               or isinstance(node, exp.Case) \
+               or isinstance(node, exp.If):
                 steps.append(node.sql(dialect=self.dialect))
         return steps or ["IDENTITY"]
 
     def _find_source_columns(self, expr: exp.Expression):
         """
         Return list of (source_table, source_column) for every Column,
-        resolving aliases via simple nearest-ancestor lookup.
+        resolving CTEs by recursion and falling back to aliases.
         """
         results = []
         for col in expr.find_all(exp.Column):
-            table = col.table or self._resolve_table_alias(col)
-            results.append((table, col.name))
+            tbl = col.table
+            # If the table alias is a CTE, expand it
+            if tbl and tbl in self.ctes:
+                # Drill into that CTE to find its own source for this column
+                expanded = self._extract_from_cte(tbl, col.name)
+                results.extend(expanded)
+            else:
+                # Normal base table or inherited alias
+                resolved_tbl = tbl or self._resolve_table_alias(col)
+                results.append((resolved_tbl, col.name))
         return results
 
     def _resolve_table_alias(self, column_node: exp.Column):
         """
-        Fallback alias resolution: scan all FROM/JOIN in AST to match alias.
-        (For deeper nested subqueries, enhance this logic.)
+        Fallback alias resolution: scan the AST for a FROM or JOIN
+        that defines this alias. For simplicity, return the alias itself.
         """
-        alias = column_node.table
-        # As a placeholder: return alias or None
-        return alias
+        return column_node.table
+
+    def _extract_from_cte(self, cte_name: str, cte_column: str):
+        """
+        Given a CTE name and one of its output columns,
+        walk that CTE’s SELECT AST to find underlying (table, column).
+        """
+        cte_select = self.ctes.get(cte_name)
+        if not isinstance(cte_select, exp.Select):
+            return []
+
+        # Find the projection in the CTE that produced cte_column
+        for proj in cte_select.expressions:
+            if proj.alias_or_name == cte_column:
+                # Reuse the normal logic on this projection node
+                return self._find_source_columns(proj)
+        return []
 
 
-def to_excel(lineage_df: pd.DataFrame, filters_df: pd.DataFrame,
-             joins_df: pd.DataFrame, output_path: str):
+def to_excel(lineage_df: pd.DataFrame,
+             filters_df: pd.DataFrame,
+             joins_df: pd.DataFrame,
+             output_path: str):
     """
     Write the three DataFrames to separate sheets in an Excel workbook.
     """
@@ -138,10 +183,10 @@ def to_excel(lineage_df: pd.DataFrame, filters_df: pd.DataFrame,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extract SQL lineage (source→target columns, transforms, filters, joins)"
+        description="Extract SQL lineage (source→target columns, transforms, filters, joins), with CTE support"
     )
     parser.add_argument("--sql-file",
-                        help="Path to .sql file (INSERT ... SELECT or SELECT).",
+                        help="Path to .sql file (INSERT ... SELECT or SELECT, possibly WITH).",
                         required=True)
     parser.add_argument("--default-target",
                         help="If no INSERT, use this as target (e.g. filename or table name).",
