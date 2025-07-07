@@ -1,56 +1,98 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Confluence Table Filter</title>
-  <meta charset="UTF-8" />
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .modal, .filter-controls, .table-picker {
-      margin: 12px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-    }
-    .modal select, .filter-controls select, .filter-controls input[type="date"] {
-      margin: 5px;
-      width: 200px;
-    }
-    .modal { display: none; position: fixed; top: 20%; left: 40%; z-index: 99; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 98; }
-  </style>
-</head>
-<body>
+<!-- ✅ Smart Filter Utility with Styling, Export Fix, and Clean Header Handling -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<h2>🧠 Confluence Table Filter Utility</h2>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 20px;
+  }
 
-<div class="table-picker">
-  <strong>Select a table to filter:</strong><br/>
-  <select id="tableSelect" onchange="onTableSelect()">
-    <option value="">-- Choose a table --</option>
-  </select>
+  .smart-filter-container {
+    max-width: 1000px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    border-radius: 8px;
+  }
+
+  select, input[type="date"], button {
+    padding: 6px 10px;
+    margin: 10px 8px 10px 0;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+
+  button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #1e40af;
+  }
+
+  .filter-group {
+    margin-bottom: 20px;
+  }
+
+  .modal, .modal-overlay {
+    display: none;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 98;
+  }
+
+  .modal {
+    position: fixed;
+    top: 20%;
+    left: 35%;
+    width: 400px;
+    padding: 20px;
+    background: white;
+    border: 1px solid #999;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    z-index: 99;
+  }
+</style>
+
+<div class="smart-filter-container">
+  <h3>🔍 Smart Table Filter Utility</h3>
+
+  <div class="filter-group">
+    <label><strong>Select a table to filter:</strong></label>
+    <select id="tableSelect" onchange="onTableSelect()">
+      <option value="">-- Choose a table --</option>
+    </select>
+    <button onclick="showFilterConfig()" id="filterConfigBtn" disabled>⚙️ Configure Filters</button>
+  </div>
+
+  <div id="filter-controls" class="filter-group" style="display:none;">
+    <div id="filter-fields"></div>
+    <button onclick="applyTableFilters()">Apply</button>
+    <button onclick="resetTableFilters()">Reset</button>
+    <button onclick="exportVisibleRows()">📤 Export Filtered</button>
+    <button onclick="exportFullTable()">📄 Export Full Table</button>
+  </div>
 </div>
 
-<button onclick="showFilterConfig()" disabled id="filterConfigBtn">⚙️ Configure Filter Columns</button>
-
-<div class="filter-controls" id="filter-controls" style="display:none;">
-  <strong>Filters:</strong>
-  <div id="filter-fields"></div>
-  <button onclick="applyTableFilters()">Apply</button>
-  <button onclick="resetTableFilters()" style="margin-left:10px;">Reset</button>
-  <button onclick="exportVisibleRows()" style="margin-left:10px;">📤 Export to Excel</button>
-</div>
-
-<!-- Modal for header selection -->
+<!-- Modal for filter column selection -->
 <div class="modal-overlay" id="modal-overlay"></div>
 <div class="modal" id="headerModal">
-  <div><strong>Select Columns to Filter</strong></div>
-  <div id="modal-body"></div>
-  <div style="margin-top:10px;">
+  <strong>Select Columns to Filter</strong>
+  <div id="modal-body" style="margin-top:10px;"></div>
+  <div style="margin-top:15px;">
     <button onclick="applyHeaderSelection()">Apply</button>
-    <button onclick="closeModal()" style="margin-left:10px;">Cancel</button>
+    <button onclick="closeModal()">Cancel</button>
   </div>
 </div>
 
@@ -68,11 +110,15 @@ function onTableSelect() {
 
 function showFilterConfig() {
   const headers = selectedTable.querySelectorAll('thead th');
+  const seenHeaders = new Set();
   const modalBody = document.getElementById('modal-body');
   modalBody.innerHTML = '';
   headers.forEach((th, i) => {
     const text = th.textContent.trim();
-    modalBody.innerHTML += `<label><input type="checkbox" value="${i}"/> ${text}</label><br/>`;
+    if (!seenHeaders.has(text)) {
+      seenHeaders.add(text);
+      modalBody.innerHTML += `<label><input type="checkbox" value="${i}"/> ${text}</label><br/>`;
+    }
   });
   document.getElementById('modal-overlay').style.display = 'block';
   document.getElementById('headerModal').style.display = 'block';
@@ -84,8 +130,7 @@ function closeModal() {
 }
 
 function applyHeaderSelection() {
-  const checkboxes = document.querySelectorAll('#modal-body input:checked');
-  selectedCols = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  selectedCols = Array.from(document.querySelectorAll('#modal-body input:checked')).map(cb => parseInt(cb.value));
   closeModal();
   generateFilterFields();
 }
@@ -99,32 +144,41 @@ function generateFilterFields() {
   selectedCols.forEach(colIndex => {
     const header = headers[colIndex].textContent.trim();
     const isDate = header.toLowerCase().includes('date');
+
+    const label = document.createElement('label');
+    label.textContent = header + ": ";
+    filterFields.appendChild(label);
+
     if (isDate) {
       const input = document.createElement('input');
       input.type = 'date';
       input.setAttribute('data-col', colIndex);
-      filterFields.appendChild(document.createTextNode(header + ": "));
       filterFields.appendChild(input);
     } else {
       const select = document.createElement('select');
       select.setAttribute('multiple', 'multiple');
       select.setAttribute('data-col', colIndex);
+
       const values = new Set();
       rows.forEach(r => {
         const val = r.cells[colIndex]?.textContent.trim();
         if (val) values.add(val);
       });
+
       [...values].sort().forEach(v => {
         const opt = document.createElement('option');
         opt.value = v;
         opt.textContent = v;
         select.appendChild(opt);
       });
-      filterFields.appendChild(document.createTextNode(header + ": "));
+
       filterFields.appendChild(select);
       $(select).select2({ width: '200px', placeholder: header });
     }
+
+    filterFields.appendChild(document.createElement('br'));
   });
+
   document.getElementById('filter-controls').style.display = 'block';
 }
 
@@ -148,8 +202,7 @@ function applyTableFilters() {
 }
 
 function resetTableFilters() {
-  const filters = document.querySelectorAll('#filter-fields [data-col]');
-  filters.forEach(f => {
+  document.querySelectorAll('#filter-fields [data-col]').forEach(f => {
     if (f.type === 'date') f.value = '';
     else $(f).val(null).trigger('change');
   });
@@ -157,17 +210,31 @@ function resetTableFilters() {
 }
 
 function exportVisibleRows() {
+  exportTableData(true);
+}
+
+function exportFullTable() {
+  exportTableData(false);
+}
+
+function exportTableData(visibleOnly) {
   if (!selectedTable) return;
+
   const headers = [...selectedTable.querySelectorAll('thead th')].map(th => th.textContent.trim());
-  const visibleRows = [...selectedTable.querySelectorAll('tbody tr')].filter(r => r.style.display !== 'none');
-  const data = visibleRows.map(row => {
+  let rows = [...selectedTable.querySelectorAll('tbody tr')];
+  if (visibleOnly) {
+    rows = rows.filter(r => r.style.display !== 'none');
+  }
+
+  const data = rows.map(row => {
     return [...row.cells].map(td => td.textContent.trim());
   });
+
   const fullData = [headers, ...data];
   const ws = XLSX.utils.aoa_to_sheet(fullData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "FilteredData");
-  XLSX.writeFile(wb, "filtered_table.xlsx");
+  XLSX.writeFile(wb, visibleOnly ? "filtered_table.xlsx" : "full_table.xlsx");
 }
 
 window.onload = () => {
@@ -182,6 +249,3 @@ window.onload = () => {
   });
 };
 </script>
-
-</body>
-</html>
