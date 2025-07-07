@@ -1,76 +1,96 @@
-<!-- Load Select2 for dropdown filters -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confluence Table Filter + Export</title>
+  <meta charset="UTF-8" />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .modal, .filter-controls, .table-picker {
+      margin: 12px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+    }
+    .modal select, .filter-controls select, .filter-controls input[type="date"] {
+      margin: 5px;
+      width: 200px;
+    }
+    .modal { display: none; position: fixed; top: 20%; left: 40%; z-index: 99; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 98; }
+  </style>
+</head>
+<body>
 
-<style>
-  .filter-controls select, .filter-controls input[type="date"] {
-    margin: 6px;
-    width: 200px;
-  }
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 99;
-    background: white;
-    border: 1px solid #aaa;
-    padding: 15px;
-    width: 300px;
-    top: 20%;
-    left: 40%;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-  }
-  .modal-header { font-weight: bold; margin-bottom: 10px; }
-  .modal-footer { margin-top: 10px; text-align: right; }
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.3);
-    z-index: 98;
-    display: none;
-  }
-</style>
+<h2>🧠 Smart Table Filter Utility</h2>
 
-<button onclick="showFilterConfig()">⚙️ Configure Filter Columns</button>
+<div class="table-picker">
+  <strong>Select a table to filter:</strong><br/>
+  <select id="tableSelect" onchange="onTableSelect()">
+    <option value="">-- Choose a table --</option>
+  </select>
+</div>
+
+<button onclick="showFilterConfig()" disabled id="filterConfigBtn">⚙️ Configure Filter Columns</button>
+
 <div class="filter-controls" id="filter-controls" style="display:none;">
   <strong>Filters:</strong>
   <div id="filter-fields"></div>
   <button onclick="applyTableFilters()">Apply</button>
   <button onclick="resetTableFilters()" style="margin-left:10px;">Reset</button>
+  <button onclick="exportVisibleRows()" style="margin-left:10px;">📤 Export to Excel</button>
 </div>
 
 <!-- Modal for header selection -->
 <div class="modal-overlay" id="modal-overlay"></div>
 <div class="modal" id="headerModal">
-  <div class="modal-header">Select Columns to Filter</div>
+  <div><strong>Select Columns to Filter</strong></div>
   <div id="modal-body"></div>
-  <div class="modal-footer">
+  <div style="margin-top:10px;">
     <button onclick="applyHeaderSelection()">Apply</button>
-    <button onclick="closeModal()" style="margin-left: 10px;">Cancel</button>
+    <button onclick="closeModal()" style="margin-left:10px;">Cancel</button>
   </div>
 </div>
 
+<!-- Example Tables -->
+<table class="confluenceTable" border="1">
+  <thead><tr><th>Task</th><th>Status</th><th>Assignee</th><th>Due Date</th></tr></thead>
+  <tbody>
+    <tr><td>Build Filter</td><td>Open</td><td>Hari</td><td>2025-07-10</td></tr>
+    <tr><td>Test Code</td><td>In Progress</td><td>Alicia</td><td>2025-07-12</td></tr>
+  </tbody>
+</table>
+
+<table class="confluenceTable" border="1">
+  <thead><tr><th>Item</th><th>Owner</th><th>Status</th><th>Created Date</th></tr></thead>
+  <tbody>
+    <tr><td>Project A</td><td>Hari</td><td>Complete</td><td>2025-06-20</td></tr>
+    <tr><td>Project B</td><td>Sudarsan</td><td>Open</td><td>2025-07-01</td></tr>
+  </tbody>
+</table>
+
 <script>
 let selectedCols = [];
+let selectedTable = null;
+
+function onTableSelect() {
+  const index = document.getElementById('tableSelect').value;
+  selectedTable = document.querySelectorAll('.confluenceTable')[index];
+  document.getElementById('filterConfigBtn').disabled = !selectedTable;
+  document.getElementById('filter-controls').style.display = 'none';
+  document.getElementById('filter-fields').innerHTML = '';
+}
 
 function showFilterConfig() {
-  const table = document.querySelector('.confluenceTable');
-  if (!table) {
-    alert("⚠️ No table found on this page.");
-    return;
-  }
-
-  const headers = table.querySelectorAll('thead th');
+  const headers = selectedTable.querySelectorAll('thead th');
   const modalBody = document.getElementById('modal-body');
   modalBody.innerHTML = '';
-
-  headers.forEach((th, index) => {
-    const label = document.createElement('label');
-    label.innerHTML = `<input type="checkbox" value="${index}"> ${th.textContent.trim()}`;
-    modalBody.appendChild(label);
-    modalBody.appendChild(document.createElement('br'));
+  headers.forEach((th, i) => {
+    const text = th.textContent.trim();
+    modalBody.innerHTML += `<label><input type="checkbox" value="${i}"/> ${text}</label><br/>`;
   });
-
   document.getElementById('modal-overlay').style.display = 'block';
   document.getElementById('headerModal').style.display = 'block';
 }
@@ -81,27 +101,21 @@ function closeModal() {
 }
 
 function applyHeaderSelection() {
-  const selected = document.querySelectorAll('#modal-body input:checked');
-  selectedCols = Array.from(selected).map(cb => parseInt(cb.value));
+  const checkboxes = document.querySelectorAll('#modal-body input:checked');
+  selectedCols = Array.from(checkboxes).map(cb => parseInt(cb.value));
   closeModal();
   generateFilterFields();
 }
 
 function generateFilterFields() {
-  const table = document.querySelector('.confluenceTable');
-  const headers = table.querySelectorAll('thead th');
-  const rows = table.querySelectorAll('tbody tr');
+  const headers = selectedTable.querySelectorAll('thead th');
+  const rows = selectedTable.querySelectorAll('tbody tr');
   const filterFields = document.getElementById('filter-fields');
-
-  if (selectedCols.length === 0) return;
-
   filterFields.innerHTML = '';
-  document.getElementById('filter-controls').style.display = 'block';
 
   selectedCols.forEach(colIndex => {
     const header = headers[colIndex].textContent.trim();
     const isDate = header.toLowerCase().includes('date');
-
     if (isDate) {
       const input = document.createElement('input');
       input.type = 'date';
@@ -112,45 +126,38 @@ function generateFilterFields() {
       const select = document.createElement('select');
       select.setAttribute('multiple', 'multiple');
       select.setAttribute('data-col', colIndex);
-
-      const unique = new Set();
-      rows.forEach(row => {
-        const val = row.cells[colIndex]?.textContent.trim();
-        if (val) unique.add(val);
+      const values = new Set();
+      rows.forEach(r => {
+        const val = r.cells[colIndex]?.textContent.trim();
+        if (val) values.add(val);
       });
-
-      Array.from(unique).sort().forEach(v => {
-        const option = document.createElement('option');
-        option.value = v;
-        option.textContent = v;
-        select.appendChild(option);
+      [...values].sort().forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
       });
-
       filterFields.appendChild(document.createTextNode(header + ": "));
       filterFields.appendChild(select);
       $(select).select2({ width: '200px', placeholder: header });
     }
   });
+  document.getElementById('filter-controls').style.display = 'block';
 }
 
 function applyTableFilters() {
-  const table = document.querySelector('.confluenceTable');
-  const rows = table.querySelectorAll('tbody tr');
+  const rows = selectedTable.querySelectorAll('tbody tr');
   const filters = document.querySelectorAll('#filter-fields [data-col]');
-
   rows.forEach(row => {
     let show = true;
     filters.forEach(f => {
       const col = parseInt(f.getAttribute('data-col'));
-      const cell = row.cells[col];
-      const val = cell ? cell.textContent.trim().toLowerCase() : '';
-
+      const val = row.cells[col]?.textContent.trim().toLowerCase() || '';
       if (f.type === 'date') {
-        const filterVal = f.value;
-        if (filterVal && val !== filterVal) show = false;
+        if (f.value && f.value !== val) show = false;
       } else {
-        const selectedVals = $(f).val() || [];
-        if (selectedVals.length > 0 && !selectedVals.includes(val)) show = false;
+        const selected = $(f).val() || [];
+        if (selected.length && !selected.includes(val)) show = false;
       }
     });
     row.style.display = show ? '' : 'none';
@@ -163,8 +170,35 @@ function resetTableFilters() {
     if (f.type === 'date') f.value = '';
     else $(f).val(null).trigger('change');
   });
-
-  const table = document.querySelector('.confluenceTable');
-  table.querySelectorAll('tbody tr').forEach(r => r.style.display = '');
+  selectedTable.querySelectorAll('tbody tr').forEach(r => r.style.display = '');
 }
+
+function exportVisibleRows() {
+  if (!selectedTable) return;
+  const headers = [...selectedTable.querySelectorAll('thead th')].map(th => th.textContent.trim());
+  const visibleRows = [...selectedTable.querySelectorAll('tbody tr')].filter(r => r.style.display !== 'none');
+  const data = visibleRows.map(row => {
+    return [...row.cells].map(td => td.textContent.trim());
+  });
+  const fullData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(fullData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "FilteredData");
+  XLSX.writeFile(wb, "filtered_table.xlsx");
+}
+
+window.onload = () => {
+  const tables = document.querySelectorAll('.confluenceTable');
+  const tableSelect = document.getElementById('tableSelect');
+  tables.forEach((tbl, i) => {
+    const headers = [...tbl.querySelectorAll('thead th')].map(th => th.textContent.trim()).join(", ");
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Table ${i + 1}: [${headers}]`;
+    tableSelect.appendChild(opt);
+  });
+};
 </script>
+
+</body>
+</html>
