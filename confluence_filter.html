@@ -1,4 +1,4 @@
-<!-- ✅ Smart Filter Utility with Styling, Export Fix, and Clean Header Handling -->
+<!-- ✅ Smart Filter with Clean Layout, Export Fixes -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -10,25 +10,41 @@
   }
 
   .smart-filter-container {
-    max-width: 1000px;
+    max-width: 1200px;
     padding: 20px;
     border: 1px solid #ddd;
     background: #fafafa;
     border-radius: 8px;
   }
 
-  select, input[type="date"], button {
-    padding: 6px 10px;
-    margin: 10px 8px 10px 0;
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .filter-item {
+    flex: 1 1 calc(25% - 15px);
+    min-width: 220px;
+  }
+
+  select, input[type="date"] {
+    width: 100%;
+    padding: 6px;
     font-size: 14px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    margin-top: 4px;
   }
 
   button {
+    padding: 10px 20px;
+    margin: 10px 8px;
+    font-size: 14px;
     background-color: #2563eb;
     color: white;
     border: none;
+    border-radius: 5px;
     cursor: pointer;
   }
 
@@ -36,8 +52,9 @@
     background-color: #1e40af;
   }
 
-  .filter-group {
-    margin-bottom: 20px;
+  .button-group {
+    text-align: center;
+    margin-top: 20px;
   }
 
   .modal, .modal-overlay {
@@ -66,26 +83,28 @@
 </style>
 
 <div class="smart-filter-container">
-  <h3>🔍 Smart Table Filter Utility</h3>
+  <h3>🔍 Smart Confluence Table Filter</h3>
 
-  <div class="filter-group">
-    <label><strong>Select a table to filter:</strong></label>
+  <div>
+    <label><strong>Select a table:</strong></label>
     <select id="tableSelect" onchange="onTableSelect()">
       <option value="">-- Choose a table --</option>
     </select>
     <button onclick="showFilterConfig()" id="filterConfigBtn" disabled>⚙️ Configure Filters</button>
   </div>
 
-  <div id="filter-controls" class="filter-group" style="display:none;">
-    <div id="filter-fields"></div>
-    <button onclick="applyTableFilters()">Apply</button>
-    <button onclick="resetTableFilters()">Reset</button>
-    <button onclick="exportVisibleRows()">📤 Export Filtered</button>
-    <button onclick="exportFullTable()">📄 Export Full Table</button>
+  <div id="filter-controls" style="display:none;">
+    <div class="filter-row" id="filter-fields"></div>
+    <div class="button-group">
+      <button onclick="applyTableFilters()">Apply</button>
+      <button onclick="resetTableFilters()">Reset</button>
+      <button onclick="exportVisibleRows()">📤 Export Filtered</button>
+      <button onclick="exportFullTable()">📄 Export Full Table</button>
+    </div>
   </div>
 </div>
 
-<!-- Modal for filter column selection -->
+<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay"></div>
 <div class="modal" id="headerModal">
   <strong>Select Columns to Filter</strong>
@@ -110,13 +129,13 @@ function onTableSelect() {
 
 function showFilterConfig() {
   const headers = selectedTable.querySelectorAll('thead th');
-  const seenHeaders = new Set();
+  const seen = new Set();
   const modalBody = document.getElementById('modal-body');
   modalBody.innerHTML = '';
   headers.forEach((th, i) => {
     const text = th.textContent.trim();
-    if (!seenHeaders.has(text)) {
-      seenHeaders.add(text);
+    if (!seen.has(text)) {
+      seen.add(text);
       modalBody.innerHTML += `<label><input type="checkbox" value="${i}"/> ${text}</label><br/>`;
     }
   });
@@ -144,16 +163,18 @@ function generateFilterFields() {
   selectedCols.forEach(colIndex => {
     const header = headers[colIndex].textContent.trim();
     const isDate = header.toLowerCase().includes('date');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'filter-item';
 
     const label = document.createElement('label');
-    label.textContent = header + ": ";
-    filterFields.appendChild(label);
+    label.textContent = header;
+    wrapper.appendChild(label);
 
     if (isDate) {
       const input = document.createElement('input');
       input.type = 'date';
       input.setAttribute('data-col', colIndex);
-      filterFields.appendChild(input);
+      wrapper.appendChild(input);
     } else {
       const select = document.createElement('select');
       select.setAttribute('multiple', 'multiple');
@@ -172,11 +193,11 @@ function generateFilterFields() {
         select.appendChild(opt);
       });
 
-      filterFields.appendChild(select);
-      $(select).select2({ width: '200px', placeholder: header });
+      wrapper.appendChild(select);
+      setTimeout(() => $(select).select2({ width: '100%' }), 0);
     }
 
-    filterFields.appendChild(document.createElement('br'));
+    filterFields.appendChild(wrapper);
   });
 
   document.getElementById('filter-controls').style.display = 'block';
@@ -220,7 +241,8 @@ function exportFullTable() {
 function exportTableData(visibleOnly) {
   if (!selectedTable) return;
 
-  const headers = [...selectedTable.querySelectorAll('thead th')].map(th => th.textContent.trim());
+  const allHeaders = [...selectedTable.querySelectorAll('thead th')];
+  const headers = allHeaders.map(th => th.textContent.trim());
   let rows = [...selectedTable.querySelectorAll('tbody tr')];
   if (visibleOnly) {
     rows = rows.filter(r => r.style.display !== 'none');
@@ -233,8 +255,9 @@ function exportTableData(visibleOnly) {
   const fullData = [headers, ...data];
   const ws = XLSX.utils.aoa_to_sheet(fullData);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "FilteredData");
-  XLSX.writeFile(wb, visibleOnly ? "filtered_table.xlsx" : "full_table.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "TableExport");
+  const filename = visibleOnly ? "filtered_table.xlsx" : "full_table.xlsx";
+  XLSX.writeFile(wb, filename);
 }
 
 window.onload = () => {
