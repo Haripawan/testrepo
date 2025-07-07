@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Confluence Table Filter + Export</title>
+  <title>Confluence Table Filter</title>
   <meta charset="UTF-8" />
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -24,7 +24,7 @@
 </head>
 <body>
 
-<h2>🧠 Smart Table Filter Utility</h2>
+<h2>🧠 Confluence Table Filter Utility</h2>
 
 <div class="table-picker">
   <strong>Select a table to filter:</strong><br/>
@@ -53,23 +53,6 @@
     <button onclick="closeModal()" style="margin-left:10px;">Cancel</button>
   </div>
 </div>
-
-<!-- Example Tables -->
-<table class="confluenceTable" border="1">
-  <thead><tr><th>Task</th><th>Status</th><th>Assignee</th><th>Due Date</th></tr></thead>
-  <tbody>
-    <tr><td>Build Filter</td><td>Open</td><td>Hari</td><td>2025-07-10</td></tr>
-    <tr><td>Test Code</td><td>In Progress</td><td>Alicia</td><td>2025-07-12</td></tr>
-  </tbody>
-</table>
-
-<table class="confluenceTable" border="1">
-  <thead><tr><th>Item</th><th>Owner</th><th>Status</th><th>Created Date</th></tr></thead>
-  <tbody>
-    <tr><td>Project A</td><td>Hari</td><td>Complete</td><td>2025-06-20</td></tr>
-    <tr><td>Project B</td><td>Sudarsan</td><td>Open</td><td>2025-07-01</td></tr>
-  </tbody>
-</table>
 
 <script>
 let selectedCols = [];
