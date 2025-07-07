@@ -1,20 +1,16 @@
-<!-- ✅ Smart Filter with Clean Layout, Export Fixes -->
+<!-- ✅ Smart Table Filter (Headers Fixed, Buttons Centered, Layout Polished) -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-  body {
-    font-family: "Segoe UI", sans-serif;
-    margin: 20px;
-  }
-
   .smart-filter-container {
-    max-width: 1200px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    background: #fafafa;
+    font-family: "Segoe UI", sans-serif;
+    background: #f9f9f9;
+    padding: 25px;
     border-radius: 8px;
+    border: 1px solid #ddd;
+    max-width: 1200px;
   }
 
   .filter-row {
@@ -85,8 +81,8 @@
 <div class="smart-filter-container">
   <h3>🔍 Smart Confluence Table Filter</h3>
 
-  <div>
-    <label><strong>Select a table:</strong></label>
+  <div class="button-group">
+    <label><strong>Select a table:</strong></label><br/>
     <select id="tableSelect" onchange="onTableSelect()">
       <option value="">-- Choose a table --</option>
     </select>
@@ -241,23 +237,23 @@ function exportFullTable() {
 function exportTableData(visibleOnly) {
   if (!selectedTable) return;
 
-  const allHeaders = [...selectedTable.querySelectorAll('thead th')];
-  const headers = allHeaders.map(th => th.textContent.trim());
-  let rows = [...selectedTable.querySelectorAll('tbody tr')];
-  if (visibleOnly) {
-    rows = rows.filter(r => r.style.display !== 'none');
-  }
+  const headerCells = [...selectedTable.querySelectorAll('thead th')];
+  const headers = headerCells.map(th => th.textContent.trim());
 
-  const data = rows.map(row => {
-    return [...row.cells].map(td => td.textContent.trim());
-  });
+  const bodyRows = [...selectedTable.querySelectorAll('tbody tr')];
+  const filteredRows = visibleOnly
+    ? bodyRows.filter(r => r.style.display !== 'none')
+    : bodyRows;
 
-  const fullData = [headers, ...data];
-  const ws = XLSX.utils.aoa_to_sheet(fullData);
+  const data = filteredRows.map(row =>
+    [...row.cells].map(td => td.textContent.trim())
+  );
+
+  const exportData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(exportData);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "TableExport");
-  const filename = visibleOnly ? "filtered_table.xlsx" : "full_table.xlsx";
-  XLSX.writeFile(wb, filename);
+  XLSX.utils.book_append_sheet(wb, ws, "FilteredData");
+  XLSX.writeFile(wb, visibleOnly ? "filtered_table.xlsx" : "full_table.xlsx");
 }
 
 window.onload = () => {
