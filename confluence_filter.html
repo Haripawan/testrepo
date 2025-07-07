@@ -1,109 +1,136 @@
-<!-- Load Select2 for searchable dropdowns -->
+<!-- Load Select2 for dropdown filters -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
-  .filter-config, .filter-controls {
-    margin: 10px 0;
-    padding: 10px;
-    border: 1px solid #ddd;
-    background: #f9f9f9;
-  }
   .filter-controls select, .filter-controls input[type="date"] {
-    width: 180px;
-    margin: 5px;
+    margin: 6px;
+    width: 200px;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 99;
+    background: white;
+    border: 1px solid #aaa;
+    padding: 15px;
+    width: 300px;
+    top: 20%;
+    left: 40%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .modal-header { font-weight: bold; margin-bottom: 10px; }
+  .modal-footer { margin-top: 10px; text-align: right; }
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 98;
+    display: none;
   }
 </style>
 
-<div class="filter-config">
-  <strong>📌 Select columns to filter:</strong><br/>
-  <div id="filter-column-list"></div>
-  <button onclick="generateFiltersFromSelection()">Generate Filters</button>
-</div>
-
+<button onclick="showFilterConfig()">⚙️ Configure Filter Columns</button>
 <div class="filter-controls" id="filter-controls" style="display:none;">
-  <strong>🔍 Apply Filters:</strong><br/>
+  <strong>Filters:</strong>
   <div id="filter-fields"></div>
   <button onclick="applyTableFilters()">Apply</button>
-  <button onclick="resetTableFilters()" style="margin-left: 10px;">Reset</button>
+  <button onclick="resetTableFilters()" style="margin-left:10px;">Reset</button>
+</div>
+
+<!-- Modal for header selection -->
+<div class="modal-overlay" id="modal-overlay"></div>
+<div class="modal" id="headerModal">
+  <div class="modal-header">Select Columns to Filter</div>
+  <div id="modal-body"></div>
+  <div class="modal-footer">
+    <button onclick="applyHeaderSelection()">Apply</button>
+    <button onclick="closeModal()" style="margin-left: 10px;">Cancel</button>
+  </div>
 </div>
 
 <script>
-let selectedColumns = [];
+let selectedCols = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+function showFilterConfig() {
   const table = document.querySelector('.confluenceTable');
-  if (!table) return;
-
-  const headerCells = table.querySelectorAll('thead th');
-  const columnListDiv = document.getElementById('filter-column-list');
-  columnListDiv.innerHTML = '';
-
-  headerCells.forEach((th, index) => {
-    const label = document.createElement('label');
-    label.innerHTML = `
-      <input type="checkbox" value="${index}" />
-      ${th.textContent.trim()}
-    `;
-    columnListDiv.appendChild(label);
-    columnListDiv.appendChild(document.createElement('br'));
-  });
-});
-
-function generateFiltersFromSelection() {
-  const table = document.querySelector('.confluenceTable');
-  const rows = table.querySelectorAll('tbody tr');
-  const headers = table.querySelectorAll('thead th');
-  const selected = document.querySelectorAll('#filter-column-list input:checked');
-  const filterFields = document.getElementById('filter-fields');
-
-  if (selected.length === 0) {
-    alert("Please select at least one column.");
+  if (!table) {
+    alert("⚠️ No table found on this page.");
     return;
   }
 
+  const headers = table.querySelectorAll('thead th');
+  const modalBody = document.getElementById('modal-body');
+  modalBody.innerHTML = '';
+
+  headers.forEach((th, index) => {
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" value="${index}"> ${th.textContent.trim()}`;
+    modalBody.appendChild(label);
+    modalBody.appendChild(document.createElement('br'));
+  });
+
+  document.getElementById('modal-overlay').style.display = 'block';
+  document.getElementById('headerModal').style.display = 'block';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.getElementById('headerModal').style.display = 'none';
+}
+
+function applyHeaderSelection() {
+  const selected = document.querySelectorAll('#modal-body input:checked');
+  selectedCols = Array.from(selected).map(cb => parseInt(cb.value));
+  closeModal();
+  generateFilterFields();
+}
+
+function generateFilterFields() {
+  const table = document.querySelector('.confluenceTable');
+  const headers = table.querySelectorAll('thead th');
+  const rows = table.querySelectorAll('tbody tr');
+  const filterFields = document.getElementById('filter-fields');
+
+  if (selectedCols.length === 0) return;
+
   filterFields.innerHTML = '';
-  selectedColumns = [];
+  document.getElementById('filter-controls').style.display = 'block';
 
-  selected.forEach(cb => {
-    const colIndex = parseInt(cb.value);
-    const headerText = headers[colIndex].textContent.trim();
-    selectedColumns.push(colIndex);
+  selectedCols.forEach(colIndex => {
+    const header = headers[colIndex].textContent.trim();
+    const isDate = header.toLowerCase().includes('date');
 
-    // Check for date column
-    const isDate = headerText.toLowerCase().includes('date');
     if (isDate) {
       const input = document.createElement('input');
       input.type = 'date';
       input.setAttribute('data-col', colIndex);
-      filterFields.appendChild(document.createTextNode(headerText + ": "));
+      filterFields.appendChild(document.createTextNode(header + ": "));
       filterFields.appendChild(input);
     } else {
-      // Collect unique values
-      const uniqueVals = new Set();
-      rows.forEach(r => {
-        const val = r.cells[colIndex]?.textContent.trim();
-        if (val) uniqueVals.add(val);
-      });
-
       const select = document.createElement('select');
       select.setAttribute('multiple', 'multiple');
       select.setAttribute('data-col', colIndex);
 
-      Array.from(uniqueVals).sort().forEach(val => {
-        const opt = document.createElement('option');
-        opt.value = val;
-        opt.textContent = val;
-        select.appendChild(opt);
+      const unique = new Set();
+      rows.forEach(row => {
+        const val = row.cells[colIndex]?.textContent.trim();
+        if (val) unique.add(val);
       });
 
-      filterFields.appendChild(document.createTextNode(headerText + ": "));
+      Array.from(unique).sort().forEach(v => {
+        const option = document.createElement('option');
+        option.value = v;
+        option.textContent = v;
+        select.appendChild(option);
+      });
+
+      filterFields.appendChild(document.createTextNode(header + ": "));
       filterFields.appendChild(select);
-      $(select).select2({ width: '180px', placeholder: headerText });
+      $(select).select2({ width: '200px', placeholder: header });
     }
   });
-
-  document.getElementById('filter-controls').style.display = 'block';
 }
 
 function applyTableFilters() {
@@ -115,17 +142,18 @@ function applyTableFilters() {
     let show = true;
     filters.forEach(f => {
       const col = parseInt(f.getAttribute('data-col'));
-      const cellVal = row.cells[col]?.textContent.trim().toLowerCase() || "";
+      const cell = row.cells[col];
+      const val = cell ? cell.textContent.trim().toLowerCase() : '';
 
       if (f.type === 'date') {
         const filterVal = f.value;
-        if (filterVal && cellVal !== filterVal) show = false;
+        if (filterVal && val !== filterVal) show = false;
       } else {
-        const selected = $(f).val() || [];
-        if (selected.length > 0 && !selected.includes(cellVal)) show = false;
+        const selectedVals = $(f).val() || [];
+        if (selectedVals.length > 0 && !selectedVals.includes(val)) show = false;
       }
     });
-    row.style.display = show ? "" : "none";
+    row.style.display = show ? '' : 'none';
   });
 }
 
@@ -140,7 +168,3 @@ function resetTableFilters() {
   table.querySelectorAll('tbody tr').forEach(r => r.style.display = '');
 }
 </script>
-
-{html:script=true|style=true|iframe=false}
-<!-- Paste the full code here (as provided in previous message) -->
-{/html}
