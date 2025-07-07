@@ -1,112 +1,148 @@
-<!-- You must add this inside an HTML macro (or ScriptRunner HTML macro) -->
-
-<!-- Optional: Add Select2 for searchable dropdowns -->
+<!-- Load Select2 for better dropdowns -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
   .config-box, .filter-box {
-    padding: 10px;
     margin: 10px 0;
-    border: 1px solid #ddd;
+    padding: 10px;
+    border: 1px solid #ccc;
     background: #f9f9f9;
   }
-  .filter-box select {
+  .filter-box select, .filter-box input[type="date"] {
     width: 200px;
-    margin-right: 10px;
+    margin: 4px;
   }
 </style>
 
 <div class="config-box">
   <strong>Select columns to filter:</strong>
-  <div id="columnSelectors"></div>
-  <button onclick="generateFilters()">Apply Filters</button>
+  <div id="columnSelectorPanel"></div>
+  <button onclick="generateSelectedFilters()">Generate Filters</button>
 </div>
 
-<div class="filter-box" id="filterControls" style="display: none;">
-  <strong>Filter:</strong>
-  <div id="filters"></div>
+<div class="filter-box" id="filtersPanel" style="display: none;">
+  <strong>Filters:</strong>
+  <div id="filtersContainer"></div>
+  <button onclick="applySelectedFilters()">Apply Filters</button>
+  <button onclick="clearSelectedFilters()" style="margin-left:10px;">Reset</button>
 </div>
 
 <script>
+let selectedCols = [];
+
 function getConfluenceTable() {
   return document.querySelector('.confluenceTable');
 }
 
-function generateColumnCheckboxes() {
+function initColumnSelectionPanel() {
   const table = getConfluenceTable();
-  if (!table) return;
-
   const headers = table.querySelectorAll('thead th');
-  const container = document.getElementById('columnSelectors');
-  container.innerHTML = '';
+  const panel = document.getElementById('columnSelectorPanel');
+  panel.innerHTML = '';
 
   headers.forEach((th, index) => {
     const label = document.createElement('label');
     label.innerHTML = `
       <input type="checkbox" value="${index}" />
-      ${th.textContent}
+      ${th.textContent.trim()}
     `;
-    container.appendChild(label);
-    container.appendChild(document.createElement('br'));
+    panel.appendChild(label);
+    panel.appendChild(document.createElement('br'));
   });
 }
 
-function generateFilters() {
-  const selectedCols = Array.from(document.querySelectorAll('#columnSelectors input:checked')).map(cb => parseInt(cb.value));
-  if (selectedCols.length === 0) return;
-
+function generateSelectedFilters() {
   const table = getConfluenceTable();
-  const rows = table.querySelectorAll('tbody tr');
   const headers = table.querySelectorAll('thead th');
-  const filtersDiv = document.getElementById('filters');
-  filtersDiv.innerHTML = '';
-  document.getElementById('filterControls').style.display = 'block';
+  const rows = table.querySelectorAll('tbody tr');
+  const filtersContainer = document.getElementById('filtersContainer');
+  filtersContainer.innerHTML = '';
+  selectedCols = [];
+
+  const checked = document.querySelectorAll('#columnSelectorPanel input[type="checkbox"]:checked');
+  checked.forEach(cb => selectedCols.push(parseInt(cb.value)));
+
+  if (selectedCols.length === 0) {
+    alert("Please select at least one column to filter.");
+    return;
+  }
+
+  document.getElementById('filtersPanel').style.display = 'block';
 
   selectedCols.forEach(colIndex => {
-    const uniqueValues = new Set();
-    rows.forEach(row => {
-      const cell = row.querySelectorAll('td')[colIndex];
-      if (cell) uniqueValues.add(cell.textContent.trim());
-    });
+    const headerName = headers[colIndex].textContent.trim();
+    const isDate = headerName.toLowerCase().includes("date");
 
-    const select = document.createElement('select');
-    select.setAttribute('data-column', colIndex);
-    select.innerHTML = `<option value="">-- ${headers[colIndex].textContent.trim()} --</option>`;
-    Array.from(uniqueValues).sort().forEach(val => {
-      const option = document.createElement('option');
-      option.value = val;
-      option.textContent = val;
-      select.appendChild(option);
-    });
+    if (isDate) {
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.setAttribute('data-col', colIndex);
+      filtersContainer.appendChild(document.createTextNode(headerName + ": "));
+      filtersContainer.appendChild(input);
+    } else {
+      const select = document.createElement('select');
+      select.setAttribute('multiple', 'multiple');
+      select.setAttribute('data-col', colIndex);
 
-    filtersDiv.appendChild(select);
-    // Make it searchable
-    $(select).select2({ width: '200px', placeholder: 'Select value' });
-    select.addEventListener('change', applyFilters);
+      const uniqueValues = new Set();
+      rows.forEach(row => {
+        const val = row.cells[colIndex]?.textContent.trim();
+        if (val) uniqueValues.add(val);
+      });
+
+      Array.from(uniqueValues).sort().forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = val;
+        select.appendChild(option);
+      });
+
+      filtersContainer.appendChild(document.createTextNode(headerName + ": "));
+      filtersContainer.appendChild(select);
+      $(select).select2({ width: '200px', placeholder: headerName });
+    }
   });
 }
 
-function applyFilters() {
+function applySelectedFilters() {
   const table = getConfluenceTable();
   const rows = table.querySelectorAll('tbody tr');
-  const selects = document.querySelectorAll('#filters select');
+  const filters = document.querySelectorAll('#filtersContainer [data-col]');
 
   rows.forEach(row => {
     let show = true;
-    selects.forEach(select => {
-      const col = parseInt(select.getAttribute('data-column'));
-      const filterVal = select.value.toLowerCase();
-      const cellVal = row.querySelectorAll('td')[col]?.textContent.trim().toLowerCase() || '';
-      if (filterVal && cellVal !== filterVal) {
-        show = false;
+    filters.forEach(filter => {
+      const col = parseInt(filter.getAttribute('data-col'));
+      const cellVal = row.cells[col]?.textContent.trim().toLowerCase() || "";
+
+      if (filter.type === 'date') {
+        const filterVal = filter.value;
+        if (filterVal && cellVal !== filterVal) show = false;
+      } else {
+        const selected = $(filter).val() || [];
+        if (selected.length > 0 && !selected.includes(cellVal)) show = false;
       }
     });
-    row.style.display = show ? '' : 'none';
+    row.style.display = show ? "" : "none";
   });
 }
 
+function clearSelectedFilters() {
+  const filters = document.querySelectorAll('#filtersContainer [data-col]');
+  filters.forEach(f => {
+    if (f.type === 'date') {
+      f.value = '';
+    } else {
+      $(f).val(null).trigger('change');
+    }
+  });
+  // Show all rows
+  const table = getConfluenceTable();
+  table.querySelectorAll('tbody tr').forEach(r => r.style.display = '');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  generateColumnCheckboxes();
+  initColumnSelectionPanel();
 });
 </script>
