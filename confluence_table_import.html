@@ -2,85 +2,160 @@
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    #uploadContainer {
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    select, button {
-      margin: 5px;
-    }
-    table.confluenceTable {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-    }
-    .confluenceTh, .confluenceTd {
-      border: 1px solid #ccc;
-      padding: 8px;
-    }
-    .confluenceTh {
-      background-color: #f0f0f0;
-      font-weight: bold;
-    }
+    #importBtn { margin: 20px auto; padding: 10px 20px; display: block; font-size: 16px; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+    .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; max-width: 800px; border-radius: 8px; }
+    .close { float: right; font-size: 24px; cursor: pointer; }
+    table.confluenceTable { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    .confluenceTh, .confluenceTd { border: 1px solid #ccc; padding: 6px; }
+    .confluenceTh { background: #f0f0f0; font-weight: bold; }
+    select, input[type="file"], button { margin: 8px; }
+    .centered { text-align: center; }
   </style>
 </head>
 <body>
-  <div id="uploadContainer">
-    <input type="file" id="excelFile" accept=".xlsx,.xls" />
-    <button onclick="loadSheets()">Load Sheets</button>
-    <br>
+
+<!-- Trigger -->
+<div class="centered">
+  <button id="importBtn" onclick="openModal()">Import Excel to Confluence Table</button>
+</div>
+
+<!-- Modal -->
+<div id="excelModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Upload Excel and Select Sheet</h3>
+    <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    <button onclick="loadSheets()">Load Sheets</button><br>
     <select id="sheetSelector" style="display:none;"></select>
-    <button onclick="renderSelectedSheet()" id="importBtn" style="display:none;">Import Sheet</button>
+    <button onclick="renderSelectedSheet()" id="renderBtn" style="display:none;">Preview Sheet</button>
+
+    <div id="previewArea"></div>
+
+    <div class="centered" style="margin-top: 20px;">
+      <label>Confluence Page ID: <input id="pageId" type="text" placeholder="e.g. 123456" /></label><br>
+      <button onclick="insertTableToPage()" id="insertBtn" style="display:none;">Insert Table to Page</button>
+    </div>
   </div>
+</div>
 
-  <div id="output"></div>
+<script>
+  let workbookGlobal = null;
+  let renderedTableHTML = '';
 
-  <script>
-    let workbookGlobal = null;
+  function openModal() {
+    document.getElementById("excelModal").style.display = "block";
+  }
 
-    function loadSheets() {
-      const file = document.getElementById('excelFile').files[0];
-      if (!file) return alert("Select an Excel file.");
+  function closeModal() {
+    document.getElementById("excelModal").style.display = "none";
+    document.getElementById("previewArea").innerHTML = "";
+    document.getElementById("sheetSelector").style.display = "none";
+    document.getElementById("renderBtn").style.display = "none";
+    document.getElementById("insertBtn").style.display = "none";
+  }
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const data = new Uint8Array(e.target.result);
-        workbookGlobal = XLSX.read(data, { type: 'array' });
+  function loadSheets() {
+    const file = document.getElementById('excelFile').files[0];
+    if (!file) return alert("Please select an Excel file.");
 
-        const sheetSelector = document.getElementById('sheetSelector');
-        sheetSelector.innerHTML = '';
-        workbookGlobal.SheetNames.forEach(name => {
-          const opt = document.createElement("option");
-          opt.value = name;
-          opt.textContent = name;
-          sheetSelector.appendChild(opt);
-        });
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const data = new Uint8Array(e.target.result);
+      workbookGlobal = XLSX.read(data, { type: 'array' });
 
-        sheetSelector.style.display = 'inline-block';
-        document.getElementById('importBtn').style.display = 'inline-block';
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function renderSelectedSheet() {
-      const sheetName = document.getElementById('sheetSelector').value;
-      const worksheet = workbookGlobal.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-      let html = '<table class="confluenceTable">';
-      data.forEach((row, rowIndex) => {
-        html += '<tr>';
-        row.forEach(cell => {
-          html += rowIndex === 0
-            ? `<th class="confluenceTh">${cell || ''}</th>`
-            : `<td class="confluenceTd">${cell || ''}</td>`;
-        });
-        html += '</tr>';
+      const sheetSelector = document.getElementById('sheetSelector');
+      sheetSelector.innerHTML = '';
+      workbookGlobal.SheetNames.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        sheetSelector.appendChild(opt);
       });
-      html += '</table>';
 
-      document.getElementById('output').innerHTML = html;
+      sheetSelector.style.display = 'inline-block';
+      document.getElementById('renderBtn').style.display = 'inline-block';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function renderSelectedSheet() {
+    const sheetName = document.getElementById('sheetSelector').value;
+    const worksheet = workbookGlobal.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+    let html = '<table class="confluenceTable">';
+    data.forEach((row, rowIndex) => {
+      html += '<tr>';
+      row.forEach(cell => {
+        html += rowIndex === 0
+          ? `<th class="confluenceTh">${cell || ''}</th>`
+          : `<td class="confluenceTd">${cell || ''}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</table>';
+
+    renderedTableHTML = html;
+    document.getElementById('previewArea').innerHTML = html;
+    document.getElementById('insertBtn').style.display = 'inline-block';
+  }
+
+  async function insertTableToPage() {
+    const pageId = document.getElementById("pageId").value.trim();
+    if (!pageId) {
+      alert("Please enter the Confluence Page ID.");
+      return;
     }
-  </script>
+
+    const baseUrl = `/rest/api/content/${pageId}`;
+
+    try {
+      // Step 1: Get current content
+      const getResp = await fetch(baseUrl + '?expand=body.storage,version', {
+        credentials: 'same-origin'  // use session cookie
+      });
+
+      if (!getResp.ok) throw new Error("Failed to fetch page content. Are you logged in?");
+
+      const pageData = await getResp.json();
+      const currentBody = pageData.body.storage.value;
+      const version = pageData.version.number;
+
+      // Step 2: Append new table
+      const updatedBody = currentBody + renderedTableHTML;
+
+      // Step 3: Update content
+      const updateResp = await fetch(baseUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          id: pageId,
+          type: 'page',
+          title: pageData.title,
+          version: { number: version + 1 },
+          body: {
+            storage: {
+              value: updatedBody,
+              representation: "storage"
+            }
+          }
+        })
+      });
+
+      if (!updateResp.ok) throw new Error("Failed to update the page.");
+
+      alert("Table successfully inserted into the Confluence page!");
+      closeModal();
+
+    } catch (err) {
+      console.error(err);
+      alert("Error: " + err.message);
+    }
+  }
+</script>
 </body>
 </html>
