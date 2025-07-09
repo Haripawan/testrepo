@@ -3,61 +3,83 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     #uploadContainer {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       text-align: center;
     }
-    table {
+    select, button {
+      margin: 5px;
+    }
+    table.confluenceTable {
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
     }
-    th, td {
+    .confluenceTh, .confluenceTd {
       border: 1px solid #ccc;
       padding: 8px;
-      text-align: left;
     }
-    th {
+    .confluenceTh {
       background-color: #f0f0f0;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div id="uploadContainer">
-    <input type="file" id="excelFile" accept=".xlsx, .xls" />
-    <button onclick="handleFile()">Import to Table</button>
+    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+    <button onclick="loadSheets()">Load Sheets</button>
+    <br>
+    <select id="sheetSelector" style="display:none;"></select>
+    <button onclick="renderSelectedSheet()" id="importBtn" style="display:none;">Import Sheet</button>
   </div>
+
   <div id="output"></div>
 
   <script>
-    function handleFile() {
+    let workbookGlobal = null;
+
+    function loadSheets() {
       const file = document.getElementById('excelFile').files[0];
-      if (!file) {
-        alert("Please select an Excel file.");
-        return;
-      }
+      if (!file) return alert("Select an Excel file.");
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0]; // Use first sheet
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        workbookGlobal = XLSX.read(data, { type: 'array' });
 
-        // Create HTML table
-        let html = '<table>';
-        jsonData.forEach((row, rowIndex) => {
-          html += '<tr>';
-          row.forEach(cell => {
-            html += rowIndex === 0 ? `<th>${cell || ''}</th>` : `<td>${cell || ''}</td>`;
-          });
-          html += '</tr>';
+        const sheetSelector = document.getElementById('sheetSelector');
+        sheetSelector.innerHTML = '';
+        workbookGlobal.SheetNames.forEach(name => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          sheetSelector.appendChild(opt);
         });
-        html += '</table>';
 
-        document.getElementById('output').innerHTML = html;
+        sheetSelector.style.display = 'inline-block';
+        document.getElementById('importBtn').style.display = 'inline-block';
       };
       reader.readAsArrayBuffer(file);
+    }
+
+    function renderSelectedSheet() {
+      const sheetName = document.getElementById('sheetSelector').value;
+      const worksheet = workbookGlobal.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      let html = '<table class="confluenceTable">';
+      data.forEach((row, rowIndex) => {
+        html += '<tr>';
+        row.forEach(cell => {
+          html += rowIndex === 0
+            ? `<th class="confluenceTh">${cell || ''}</th>`
+            : `<td class="confluenceTd">${cell || ''}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</table>';
+
+      document.getElementById('output').innerHTML = html;
     }
   </script>
 </body>
