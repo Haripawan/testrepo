@@ -1,0 +1,64 @@
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    #uploadContainer {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div id="uploadContainer">
+    <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    <button onclick="handleFile()">Import to Table</button>
+  </div>
+  <div id="output"></div>
+
+  <script>
+    function handleFile() {
+      const file = document.getElementById('excelFile').files[0];
+      if (!file) {
+        alert("Please select an Excel file.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0]; // Use first sheet
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        // Create HTML table
+        let html = '<table>';
+        jsonData.forEach((row, rowIndex) => {
+          html += '<tr>';
+          row.forEach(cell => {
+            html += rowIndex === 0 ? `<th>${cell || ''}</th>` : `<td>${cell || ''}</td>`;
+          });
+          html += '</tr>';
+        });
+        html += '</table>';
+
+        document.getElementById('output').innerHTML = html;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
