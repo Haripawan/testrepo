@@ -1,4 +1,4 @@
-<!-- ✅ Smart Table Filter (Headers Fixed, Buttons Centered, Layout Polished) -->
+<!-- confluence-filter-tool.html -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -67,12 +67,14 @@
 
   .modal {
     position: fixed;
-    top: 20%;
-    left: 35%;
-    width: 400px;
+    top: 15%;
+    left: 30%;
+    width: 500px;
+    max-width: 90%;
     padding: 20px;
     background: white;
     border: 1px solid #999;
+    border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.4);
     z-index: 99;
   }
@@ -104,8 +106,8 @@
 <div class="modal-overlay" id="modal-overlay"></div>
 <div class="modal" id="headerModal">
   <strong>Select Columns to Filter</strong>
-  <div id="modal-body" style="margin-top:10px;"></div>
-  <div style="margin-top:15px;">
+  <div id="modal-body" style="margin-top:10px; max-height:300px; overflow:auto;"></div>
+  <div style="margin-top:15px; text-align:right;">
     <button onclick="applyHeaderSelection()">Apply</button>
     <button onclick="closeModal()">Cancel</button>
   </div>
