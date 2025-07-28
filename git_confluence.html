@@ -1,0 +1,41 @@
+<button id="createEpicBtn">Create Jira Epic</button>
+
+<script>
+  document.getElementById("createEpicBtn").addEventListener("click", function () {
+    const jiraBaseUrl = "https://your-jira-url.com"; // Change this
+    const projectKey = "PROJ"; // Your Jira project key
+
+    const epicData = {
+      fields: {
+        project: { key: projectKey },
+        summary: "New Epic from Confluence: User Login System",
+        description: "This epic was created from Confluence requirement page at " + window.location.href,
+        issuetype: { name: "Epic" },
+        customfield_10011: "User Login System" // 💡 Change to your Epic Name field ID
+      }
+    };
+
+    fetch(`${jiraBaseUrl}/rest/api/2/issue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // "Authorization": "Basic base64(username:token)", // Optional if relying on session
+      },
+      body: JSON.stringify(epicData),
+      credentials: "include" // Use existing session cookie if logged in
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.key) {
+        alert(`Epic ${data.key} created successfully!`);
+      } else {
+        alert("Epic creation failed. Check console.");
+        console.error(data);
+      }
+    })
+    .catch(error => {
+      console.error("Error creating Epic:", error);
+      alert("Something went wrong.");
+    });
+  });
+</script>
