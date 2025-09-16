@@ -1,0 +1,59 @@
+keep it concise and cover all major Gen AI use cases for ISO 20022 data & metadata. You can think of this as a one-pager for presentations.
+
+⸻
+
+Gen AI for ISO 20022 Data & Metadata
+
+⸻
+
+Use Cases
+	1.	Legacy → ISO 20022 Migration
+	•	Auto-map SWIFT MT/FIX/proprietary → ISO 20022.
+	•	Generate transformation logic (SQL/XSLT/ETL).
+	2.	Data Quality & Validation
+	•	AI checks schema + business rules.
+	•	Suggests fixes for missing/invalid fields.
+	3.	Metadata Intelligence
+	•	Q&A on ISO elements (e.g., InstdAmt vs IntrBkSttlmAmt).
+	•	Auto-generate documentation & impact analysis.
+	4.	Compliance & Risk
+	•	Extract enriched party data for AML/KYC.
+	•	Fraud/anomaly detection using ISO transaction flows.
+	5.	Operational Automation
+	•	Conversational bots: “Generate pacs.008 for SEPA transfer”.
+	•	Business-friendly summaries of technical messages.
+	6.	Analytics & Reporting
+	•	Convert ISO data → regulatory reports (Basel, PSD2, MiFID).
+	•	Insights from purpose codes, references, and patterns.
+
+⸻
+
+Problem
+	•	Manual mapping & migration is slow, costly, and error-prone.
+	•	ISO 20022 dictionary is complex (thousands of elements).
+	•	Compliance demands rich, structured, validated data.
+
+⸻
+
+Prerequisites
+	•	ISO 20022 schemas & dictionaries (XSD/XML/JSON).
+	•	Legacy message samples (MT, FIX, proprietary).
+	•	Gen AI stack (LLMs + vector DB).
+	•	Integration with validation & compliance engines.
+
+⸻
+
+Solution
+	•	Load ISO 20022 metadata into Gen AI knowledge base.
+	•	AI maps, validates, and enriches messages.
+	•	Conversational interface for ops, devs, and compliance.
+
+⸻
+
+Benefits
+
+✅ 50–70% faster migration.
+✅ Lower costs, fewer errors.
+✅ Stronger AML/KYC & fraud checks.
+✅ Business–IT alignment via natural language.
+✅ Scalable for future ISO 20022 updates (CBPR+, HVPS+, SEPA).
