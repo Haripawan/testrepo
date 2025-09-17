@@ -1,0 +1,63 @@
+{
+  "headerImage": "https://via.placeholder.com/800x250?text=WIT%26O+Newsletter+Banner",
+  "chair": {
+    "name": "Dr. Asha Reddy",
+    "photo": "https://via.placeholder.com/120",
+    "message": "Hello everyone, welcome to this month’s edition of the WIT&O newsletter. Here’s what we’ve been up to..."
+  },
+  "inThisEdition": [
+    "Mentorship Kickoff",
+    "AI in Operations Workshop",
+    "Career Panel",
+    "Volunteer Spotlight"
+  ],
+  "highlights": [
+    {
+      "title": "AI for Ops Workshop",
+      "desc": "Hands-on session on ML automation.",
+      "image": "https://via.placeholder.com/400x200"
+    },
+    {
+      "title": "Career Panel",
+      "desc": "Inspiring stories from women leaders.",
+      "image": "https://via.placeholder.com/400x200"
+    }
+  ],
+  "events": [
+    { "title": "Mentorship Kickoff", "date": "Sep 15, 2025", "location": "Virtual" },
+    { "title": "Ops Playbook", "date": "Sep 21, 2025", "location": "London" }
+  ],
+  "didYouKnow": "Women make up less than 30% of the tech workforce, yet diverse teams are 21% more profitable.",
+  "learning": [
+    {
+      "title": "Ops Automation with Python",
+      "desc": "4-week course on scripting automation.",
+      "link": "#"
+    },
+    {
+      "title": "Leadership for Engineers",
+      "desc": "Live cohort for career growth.",
+      "link": "#"
+    }
+  ],
+  "articles": [
+    {
+      "title": "Designing Resilient Systems",
+      "summary": "Runbooks reduce MTTR by 30%.",
+      "image": "https://via.placeholder.com/400x200",
+      "link": "#"
+    },
+    {
+      "title": "From IC to Manager",
+      "summary": "Delegation and coaching tips.",
+      "image": "https://via.placeholder.com/400x200",
+      "link": "#"
+    }
+  ],
+  "footer": {
+    "year": "2025",
+    "subscribe": "mailto:subscribe@wito.org",
+    "linkedin": "#",
+    "twitter": "#"
+  }
+}
