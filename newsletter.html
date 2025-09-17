@@ -4,7 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WIT&O Newsletter</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      background: #fafafa;
+      color: #333;
+      line-height: 1.6;
+    }
+    .newsletter {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .header img {
+      width: 100%;
+      display: block;
+    }
+    .section {
+      padding: 30px;
+      border-bottom: 1px solid #eee;
+    }
+    .section h2 {
+      margin-top: 0;
+      color: #b83280;
+    }
+    .chair {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .chair img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .card {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+    }
+    .card img {
+      width: 100%;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .footer {
+      background: #b83280;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    .footer a {
+      color: #ffe6f2;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <div class="newsletter">
@@ -72,6 +143,153 @@
 
   </div>
 
-  <script src="newsletter.js"></script>
+  <!-- Config JSON embedded -->
+  <script id="newsletterConfig" type="application/json">
+  {
+    "headerImage": "https://via.placeholder.com/800x250?text=WIT%26O+Newsletter+Banner",
+    "chair": {
+      "name": "Dr. Asha Reddy",
+      "photo": "https://via.placeholder.com/120",
+      "message": "Hello everyone, welcome to this month’s edition of the WIT&O newsletter. Here’s what we’ve been up to..."
+    },
+    "inThisEdition": [
+      "Mentorship Kickoff",
+      "AI in Operations Workshop",
+      "Career Panel",
+      "Volunteer Spotlight"
+    ],
+    "highlights": [
+      {
+        "title": "AI for Ops Workshop",
+        "desc": "Hands-on session on ML automation.",
+        "image": "https://via.placeholder.com/400x200"
+      },
+      {
+        "title": "Career Panel",
+        "desc": "Inspiring stories from women leaders.",
+        "image": "https://via.placeholder.com/400x200"
+      }
+    ],
+    "events": [
+      { "title": "Mentorship Kickoff", "date": "Sep 15, 2025", "location": "Virtual" },
+      { "title": "Ops Playbook", "date": "Sep 21, 2025", "location": "London" }
+    ],
+    "didYouKnow": "Women make up less than 30% of the tech workforce, yet diverse teams are 21% more profitable.",
+    "learning": [
+      {
+        "title": "Ops Automation with Python",
+        "desc": "4-week course on scripting automation.",
+        "link": "#"
+      },
+      {
+        "title": "Leadership for Engineers",
+        "desc": "Live cohort for career growth.",
+        "link": "#"
+      }
+    ],
+    "articles": [
+      {
+        "title": "Designing Resilient Systems",
+        "summary": "Runbooks reduce MTTR by 30%.",
+        "image": "https://via.placeholder.com/400x200",
+        "link": "#"
+      },
+      {
+        "title": "From IC to Manager",
+        "summary": "Delegation and coaching tips.",
+        "image": "https://via.placeholder.com/400x200",
+        "link": "#"
+      }
+    ],
+    "footer": {
+      "year": "2025",
+      "subscribe": "mailto:subscribe@wito.org",
+      "linkedin": "#",
+      "twitter": "#"
+    }
+  }
+  </script>
+
+  <!-- JS to populate -->
+  <script>
+  function loadNewsletter() {
+    const data = JSON.parse(document.getElementById("newsletterConfig").textContent);
+
+    // Header
+    document.getElementById("headerImage").src = data.headerImage;
+
+    // Chair
+    document.getElementById("chairPhoto").src = data.chair.photo;
+    document.getElementById("chairMessage").textContent = data.chair.message;
+    document.getElementById("chairName").textContent = `- ${data.chair.name}`;
+
+    // In This Edition
+    const editionList = document.getElementById("inThisEdition");
+    data.inThisEdition.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      editionList.appendChild(li);
+    });
+
+    // Highlights
+    const highlightsDiv = document.getElementById("highlights");
+    data.highlights.forEach(h => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${h.image}" alt="${h.title}">
+        <h3>${h.title}</h3>
+        <p>${h.desc}</p>
+      `;
+      highlightsDiv.appendChild(card);
+    });
+
+    // Events
+    const eventsList = document.getElementById("events");
+    data.events.forEach(e => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${e.title}</strong> – ${e.date} (${e.location})`;
+      eventsList.appendChild(li);
+    });
+
+    // Did You Know
+    document.getElementById("didYouKnow").textContent = data.didYouKnow;
+
+    // Learning
+    const learningDiv = document.getElementById("learning");
+    data.learning.forEach(l => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${l.title}</h3>
+        <p>${l.desc}</p>
+        <a href="${l.link}">Learn More →</a>
+      `;
+      learningDiv.appendChild(card);
+    });
+
+    // Articles
+    const articlesDiv = document.getElementById("articles");
+    data.articles.forEach(a => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${a.image}" alt="${a.title}">
+        <h3>${a.title}</h3>
+        <p>${a.summary}</p>
+        <a href="${a.link}">Read More →</a>
+      `;
+      articlesDiv.appendChild(card);
+    });
+
+    // Footer
+    document.getElementById("footerYear").textContent = data.footer.year;
+    document.getElementById("subscribeLink").href = data.footer.subscribe;
+    document.getElementById("linkedinLink").href = data.footer.linkedin;
+    document.getElementById("twitterLink").href = data.footer.twitter;
+  }
+
+  loadNewsletter();
+  </script>
 </body>
 </html>
