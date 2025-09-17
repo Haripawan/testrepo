@@ -1,543 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>WIT&O — Newsletter</title>
-  <meta name="description" content="Women in Technology & Operations — Monthly Newsletter" />
-
-  <!-- Simple modern system font stack for fast rendering -->
-  <style>
-    :root{
-      --accent-1: #6C63FF;      /* purple */
-      --accent-2: #FF7AA2;      /* pink */
-      --muted: #6b7280;
-      --bg: #f7f7fb;
-      --card-bg: #ffffff;
-      --radius: 12px;
-      --max-width: 900px;
-      --gap: 20px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, #fbfbff 0%, var(--bg) 100%);
-      color:#0f172a;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      line-height:1.5;
-      padding:24px;
-      display:flex;
-      justify-content:center;
-    }
-    .container{
-      width:100%;
-      max-width:var(--max-width);
-      background:transparent;
-    }
-
-    /* Card */
-    .card{
-      background:var(--card-bg);
-      border-radius:var(--radius);
-      box-shadow: 0 6px 18px rgba(15,23,42,0.06);
-      overflow:hidden;
-      margin-bottom:var(--gap);
-    }
-
-    /* Header */
-    .masthead{
-      display:grid;
-      grid-template-columns: 1fr auto;
-      gap:16px;
-      align-items:center;
-      padding:28px;
-      background: linear-gradient(90deg, rgba(108,99,255,0.12), rgba(255,122,162,0.06));
-    }
-    .masthead .brand{
-      display:flex;
-      gap:16px;
-      align-items:center;
-    }
-    .logo{
-      width:68px;
-      height:68px;
-      border-radius:14px;
-      display:inline-grid;
-      place-items:center;
-      font-weight:700;
-      color:white;
-      background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
-      box-shadow: 0 6px 18px rgba(108,99,255,0.18);
-      flex-shrink:0;
-    }
-    .masthead h1{
-      margin:0;
-      font-size:20px;
-      letter-spacing:-0.2px;
-    }
-    .masthead p{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .header-art{
-      width:200px;
-      height:80px;
-      border-radius:10px;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(255,122,162,0.06));
-      border:1px solid rgba(15,23,42,0.03);
-    }
-
-    /* Main layout */
-    main{
-      padding:24px;
-    }
-    .grid{
-      display:grid;
-      gap:20px;
-    }
-    /* two-column responsive */
-    .two-col{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:20px;
-    }
-    @media(min-width:860px){
-      .two-col{
-        grid-template-columns: 2fr 1fr;
-      }
-    }
-
-    h2{
-      margin:0 0 12px 0;
-      font-size:18px;
-      color:#081229;
-    }
-    .muted{color:var(--muted); font-size:14px;}
-
-    /* Message from chair */
-    .chair{
-      display:flex;
-      gap:16px;
-      align-items:flex-start;
-    }
-    .chair img{
-      width:80px;
-      height:80px;
-      border-radius:50%;
-      object-fit:cover;
-      box-shadow:0 6px 16px rgba(15,23,42,0.06);
-      flex-shrink:0;
-    }
-    .chair .quote{
-      font-size:15px;
-      color:#0f172a;
-    }
-    .chair .byline{margin-top:10px; color:var(--muted); font-size:13px;}
-
-    /* In this edition */
-    .pill-list{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-    }
-    .pill{
-      background:linear-gradient(90deg, rgba(108,99,255,0.08), rgba(255,122,162,0.04));
-      border-radius:999px;
-      padding:8px 12px;
-      font-size:13px;
-      color:#0f172a;
-      border:1px solid rgba(15,23,42,0.03);
-    }
-
-    /* Event highlights cards */
-    .highlights{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-    }
-    @media(min-width:700px){
-      .highlights{
-        grid-template-columns: repeat(2,1fr);
-      }
-    }
-    .event{
-      display:flex;
-      gap:12px;
-      padding:12px;
-      border-radius:12px;
-      background:linear-gradient(180deg, rgba(250,250,255,0.9), #ffffff);
-      border:1px solid rgba(15,23,42,0.03);
-      align-items:center;
-    }
-    .event .thumb{
-      width:70px;
-      height:70px;
-      border-radius:10px;
-      flex-shrink:0;
-      background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
-      display:grid;
-      place-items:center;
-      color:white;
-      font-weight:600;
-    }
-    .event .meta{font-size:13px; color:var(--muted)}
-    .event h3{margin:0;font-size:15px}
-
-    /* Upcoming events list */
-    .upcoming{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    .upcoming .item{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      padding:10px;
-      border-radius:10px;
-      border:1px dashed rgba(15,23,42,0.04);
-      background:transparent;
-    }
-    .date{
-      width:72px;
-      min-width:72px;
-      text-align:center;
-      padding:6px;
-      border-radius:8px;
-      background:linear-gradient(180deg, rgba(108,99,255,0.06), rgba(255,122,162,0.03));
-      font-weight:700;
-    }
-    .item .info{font-size:14px}
-    .cta{
-      display:inline-block;
-      padding:8px 12px;
-      border-radius:8px;
-      background:var(--accent-1);
-      color:white;
-      text-decoration:none;
-      font-size:13px;
-      box-shadow: 0 6px 18px rgba(108,99,255,0.12);
-    }
-
-    /* Did you know / learning / articles */
-    .box{
-      padding:16px;
-      border-radius:12px;
-      background:linear-gradient(180deg, #fff, #fff);
-      border:1px solid rgba(15,23,42,0.03);
-    }
-    .fact{font-size:15px; margin:0 0 8px 0}
-    .learn-list{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px}
-    .learn-list li{display:flex; justify-content:space-between; gap:12px; align-items:center}
-    .article{
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-    }
-    .article img{width:84px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0}
-
-    /* Footer */
-    footer{
-      padding:18px;
-      text-align:center;
-      font-size:14px;
-      color:var(--muted);
-    }
-    .subscribe{
-      margin-top:12px;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      background:transparent;
-      border-radius:999px;
-      padding:8px 14px;
-      border:1px solid rgba(15,23,42,0.06);
-      text-decoration:none;
-      color:var(--accent-1);
-      font-weight:600;
-    }
-
-    /* small utilities */
-    .small{font-size:13px;color:var(--muted)}
-    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(15,23,42,0.04),transparent);margin:12px 0;border-radius:999px}
-
-    /* accessible focus */
-    a:focus, button:focus, input:focus{
-      outline:3px solid rgba(108,99,255,0.16);
-      outline-offset:2px;
-    }
-    /* read more */
-    .more{display:none}
-    .toggle-btn{
-      background:none;border:0;color:var(--accent-1);cursor:pointer;font-weight:600;padding:0;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WIT&O Newsletter</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container" role="main" aria-labelledby="newsletter-title">
+  <div class="newsletter">
 
-    <!-- Top header card -->
-    <section class="card masthead" aria-label="Newsletter header">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">WIT&O</div>
-        <div>
-          <h1 id="newsletter-title">Women in Technology & Operations — Monthly</h1>
-          <p class="small">Celebrating leadership, mentorship, learning and community</p>
-        </div>
+    <!-- Header -->
+    <div class="header">
+      <img id="headerImage" src="" alt="Newsletter Banner">
+    </div>
+
+    <!-- Chair -->
+    <div class="section chair">
+      <img id="chairPhoto" src="" alt="Chair Photo">
+      <div>
+        <h2>Message from the Chair</h2>
+        <p id="chairMessage"></p>
+        <p><strong id="chairName"></strong></p>
       </div>
+    </div>
 
-      <div class="header-art" aria-hidden="true">
-        <!-- Simple decorative SVG art -->
-        <svg width="170" height="70" viewBox="0 0 340 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="artTitle">
-          <title id="artTitle">Header art</title>
-          <defs>
-            <linearGradient id="g" x1="0" x2="1">
-              <stop offset="0" stop-color="#6C63FF" stop-opacity="0.85"/>
-              <stop offset="1" stop-color="#FF7AA2" stop-opacity="0.85"/>
-            </linearGradient>
-          </defs>
-          <rect x="0" y="0" width="340" height="140" rx="12" fill="url(#g)"/>
-          <g opacity="0.08" fill="#fff">
-            <circle cx="50" cy="40" r="30"/>
-            <circle cx="150" cy="90" r="40"/>
-            <circle cx="250" cy="40" r="22"/>
-          </g>
-        </svg>
-      </div>
-    </section>
+    <!-- In This Edition -->
+    <div class="section">
+      <h2>In This Edition</h2>
+      <ul id="inThisEdition"></ul>
+    </div>
 
-    <!-- Main content card -->
-    <article class="card" aria-labelledby="main-heading">
-      <main id="main-content">
-        <header style="padding:0 24px 8px 24px;">
-          <h2 id="main-heading">This Month at a Glance</h2>
-          <p class="muted">News, events, tips and opportunities for WIT&O — keep reading.</p>
-        </header>
+    <!-- Highlights -->
+    <div class="section">
+      <h2>Recent Event Highlights</h2>
+      <div class="grid grid-2" id="highlights"></div>
+    </div>
 
-        <div class="grid two-col" style="padding:0 24px 24px 24px;">
-          <!-- Left column -->
-          <section aria-labelledby="chair-heading">
-            <div class="box" style="margin-bottom:16px;">
-              <h2 id="chair-heading">Message from the Chair</h2>
-              <div class="chair" role="article" aria-label="Message from chair">
-                <img src="https://images.unsplash.com/photo-1554151228-14d9def656e4?q=80&w=800&auto=format&fit=crop&crop=faces" alt="Chair portrait">
-                <div>
-                  <p class="quote">Hello WIT&O community — I'm so proud of how our chapters came together this month. We launched two mentorship cohorts, grew our volunteer base, and celebrated technical talks led by early-career engineers. Keep bringing your curiosity and leadership — we rise together.</p>
-                  <p class="byline">— <strong>Dr. Asha Reddy</strong>, Chair, WIT&O</p>
-                </div>
-              </div>
-            </div>
+    <!-- Events -->
+    <div class="section">
+      <h2>Upcoming Events</h2>
+      <ul id="events"></ul>
+    </div>
 
-            <div class="box" style="margin-bottom:16px;">
-              <h2>In this edition</h2>
-              <div class="pill-list" aria-hidden="false">
-                <span class="pill">Mentorship cohort kickoff</span>
-                <span class="pill">AI for Ops workshop</span>
-                <span class="pill">Career pathways panel</span>
-                <span class="pill">Volunteer shout-out</span>
-                <span class="pill">Learning grants</span>
-              </div>
-            </div>
+    <!-- Did You Know -->
+    <div class="section">
+      <h2>Did You Know?</h2>
+      <p id="didYouKnow"></p>
+    </div>
 
-            <div class="box" style="margin-bottom:16px;">
-              <h2>Recent Event Highlights</h2>
-              <div class="highlights" role="list">
-                <article class="event" role="listitem" aria-label="AI for Operations Workshop">
-                  <div class="thumb">AI</div>
-                  <div>
-                    <h3>AI for Operations — Workshop</h3>
-                    <p class="meta">Hands-on session introducing ML ops for process automation. <span class="small">June 10, 2025 • 40 attendees</span></p>
-                  </div>
-                </article>
+    <!-- Learning -->
+    <div class="section">
+      <h2>Learning Opportunities</h2>
+      <div class="grid grid-2" id="learning"></div>
+    </div>
 
-                <article class="event" role="listitem" aria-label="Career Pathways Panel">
-                  <div class="thumb">CP</div>
-                  <div>
-                    <h3>Career Pathways Panel</h3>
-                    <p class="meta">Senior leaders from product, infra and ops shared career advice. <span class="small">June 18, 2025 • 120 attendees</span></p>
-                  </div>
-                </article>
+    <!-- Articles -->
+    <div class="section">
+      <h2>Articles</h2>
+      <div class="grid grid-2" id="articles"></div>
+    </div>
 
-                <article class="event" role="listitem" aria-label="Hackathon Demo">
-                  <div class="thumb">Hack</div>
-                  <div>
-                    <h3>Accessibility Hackathon — Demos</h3>
-                    <p class="meta">Top projects included low-bandwidth dashboards & voice-first tools. <span class="small">June 22, 2025 • Winners announced</span></p>
-                  </div>
-                </article>
-
-                <article class="event" role="listitem" aria-label="Volunteer Shoutout">
-                  <div class="thumb">❤️</div>
-                  <div>
-                    <h3>Volunteer Shout-out</h3>
-                    <p class="meta">Thanks to our volunteer leads for onboarding new chapter organizers. <span class="small">Community growth +25%</span></p>
-                  </div>
-                </article>
-              </div>
-            </div>
-
-            <div class="box" style="margin-bottom:16px;">
-              <h2>Did you know?</h2>
-              <p class="fact">Women make up <strong>less than 30%</strong> of the global tech workforce, but teams with gender diversity are 21% more likely to experience above-average profitability. Small diversity actions scale — nominate a mentee this month.</p>
-            </div>
-
-            <div class="box" style="margin-bottom:16px;">
-              <h2>Learning Opportunities</h2>
-              <ul class="learn-list" aria-label="Learning opportunities">
-                <li>
-                  <div>
-                    <strong>Ops Automation with Python</strong><div class="small">4-week self-paced course</div>
-                  </div>
-                  <a class="small" href="#" aria-label="Enroll in Ops Automation">Enroll</a>
-                </li>
-                <li>
-                  <div>
-                    <strong>Leadership for Engineers</strong><div class="small">Live cohort starting July 7</div>
-                  </div>
-                  <a class="small" href="#" aria-label="Join Leadership cohort">Join</a>
-                </li>
-                <li>
-                  <div>
-                    <strong>Data Ethics & Responsible AI</strong><div class="small">Recorded sessions + Q&A</div>
-                  </div>
-                  <a class="small" href="#" aria-label="View course">View</a>
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          <!-- Right column -->
-          <aside aria-labelledby="upcoming-heading">
-            <div class="box" style="margin-bottom:16px;">
-              <h2 id="upcoming-heading">Upcoming Events</h2>
-              <div class="upcoming" role="list">
-                <div class="item" role="listitem">
-                  <div class="date" aria-hidden="true">
-                    <div style="font-size:14px">Jul</div>
-                    <div style="font-size:18px">08</div>
-                  </div>
-                  <div class="info">
-                    <strong>Mentorship Cohort — Kickoff</strong>
-                    <div class="small">Virtual • 10:00–11:30 BST</div>
-                  </div>
-                </div>
-
-                <div class="item" role="listitem">
-                  <div class="date" aria-hidden="true">
-                    <div style="font-size:14px">Jul</div>
-                    <div style="font-size:18px">21</div>
-                  </div>
-                  <div class="info">
-                    <strong>Operations Playbook Workshop</strong>
-                    <div class="small">In-person • London</div>
-                  </div>
-                </div>
-
-                <div class="item" role="listitem">
-                  <div class="date" aria-hidden="true">
-                    <div style="font-size:14px">Aug</div>
-                    <div style="font-size:18px">05</div>
-                  </div>
-                  <div class="info">
-                    <strong>Career Growth Panel</strong>
-                    <div class="small">Hybrid • Panel & networking</div>
-                  </div>
-                </div>
-
-                <div style="margin-top:12px; text-align:center;">
-                  <a href="#" class="cta" aria-label="See all events">See all events</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="box" style="margin-bottom:16px;">
-              <h2>Articles</h2>
-
-              <article class="article" aria-labelledby="art1">
-                <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=800&auto=format&fit=crop" alt="Article image">
-                <div>
-                  <h3 id="art1" style="margin:0 0 6px 0; font-size:15px;">Designing Resilient Incident Response</h3>
-                  <p class="small">Ops engineers from ACME share their runbooks and playbooks for faster recovery.</p>
-                  <p style="margin-top:8px;"><button class="toggle-btn" data-target="a1">Read summary</button></p>
-                  <div id="a1" class="more small">Quick take: Small runbooks, runbook drills, and practiced postmortems reduce MTTR by 30%.</div>
-                </div>
-              </article>
-
-              <div class="divider" role="separator"></div>
-
-              <article class="article" aria-labelledby="art2">
-                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop" alt="Article image">
-                <div>
-                  <h3 id="art2" style="margin:0 0 6px 0; font-size:15px;">From IC to Manager: A Practical Guide</h3>
-                  <p class="small">Tips on hiring, coaching, and balancing technical depth with people leadership.</p>
-                  <p style="margin-top:8px;"><button class="toggle-btn" data-target="a2">Read summary</button></p>
-                  <div id="a2" class="more small">Quick take: Ask for stretch goals, delegate measurable outcomes, and keep 1:1s focused on progress and support.</div>
-                </div>
-              </article>
-            </div>
-
-            <div class="box" style="text-align:center;">
-              <h2>Get involved</h2>
-              <p class="small">Volunteer to lead a local meetup, mentor a cohort participant, or contribute an article.</p>
-              <a href="#" class="cta" aria-label="Volunteer with WIT&O">Volunteer</a>
-            </div>
-          </aside>
-        </div>
-
-        <footer style="padding:24px;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-            <p class="small">Enjoying the newsletter? Share it with peers and invite them to join our community.</p>
-            <!-- Subscribe link (example mailto) -->
-            <a class="subscribe" href="mailto:subscribe@wito.org?subject=Subscribe%20to%20WIT%26O%20Newsletter" aria-label="Subscribe by email">
-              ✉️ Subscribe
-            </a>
-            <p class="small" style="margin-top:8px">You are receiving this because you joined WIT&O. <a href="#" class="small">Manage preferences</a> • <a href="#" class="small">Unsubscribe</a></p>
-            <p class="small" style="margin-top:8px">WIT&O • Registered charity / community group • <span aria-hidden="true">©</span> 2025</p>
-          </div>
-        </footer>
-      </main>
-    </article>
-
-    <!-- bottom small footer card -->
-    <section class="card" style="padding:14px; text-align:center;">
-      <p class="small">Follow us: <a href="#" class="small">Twitter</a> • <a href="#" class="small">LinkedIn</a> • <a href="#" class="small">Slack</a></p>
-    </section>
+    <!-- Footer -->
+    <div class="footer">
+      <p>&copy; <span id="footerYear"></span> Women in Technology & Operations (WIT&O)</p>
+      <p>
+        <a id="subscribeLink" href="#">Subscribe</a> | 
+        <a id="linkedinLink" href="#">LinkedIn</a> | 
+        <a id="twitterLink" href="#">Twitter</a>
+      </p>
+    </div>
 
   </div>
 
-  <!-- minimal JS for read more -->
-  <script>
-    document.addEventListener('click', function(e){
-      const t = e.target;
-      if(t.matches('.toggle-btn')){
-        const id = t.getAttribute('data-target');
-        const el = document.getElementById(id);
-        if(!el) return;
-        const shown = el.style.display === 'block';
-        el.style.display = shown ? 'none' : 'block';
-        t.textContent = shown ? 'Read summary' : 'Hide';
-      }
-    });
-
-    // allow keyboard toggle via Enter/Space
-    document.querySelectorAll('.toggle-btn').forEach(btn=>{
-      btn.setAttribute('role','button');
-      btn.setAttribute('tabindex','0');
-      btn.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' || e.key === ' '){
-          e.preventDefault();
-          btn.click();
-        }
-      });
-    });
-  </script>
+  <script src="newsletter.js"></script>
 </body>
 </html>
