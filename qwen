@@ -1,0 +1,83 @@
+import json
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+# ----------------------------
+# Load Model & Tokenizer
+# ----------------------------
+model_name = "Qwen/Qwen2.5-7B-Instruct"   # adjust if local path
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",
+    torch_dtype="auto"
+)
+
+llm = pipeline("text-generation", model=model, tokenizer=tokenizer)
+
+# ----------------------------
+# Build Prompt
+# ----------------------------
+prompt_template = """
+You are given two files:
+
+1. pacs.008 XSD (ISO 20022 schema) → provides structure, element names, data types, cardinality.
+2. MDR (Message Definition Report PDF) → provides business definitions.
+
+Task:
+- Extract all elements from the XSD.
+- For each element, produce a JSON object with:
+  - xpath: full path (e.g., /Document/FIToFICstmrCdtTrf/GrpHdr/MsgId)
+  - tag: element name
+  - data_type: from XSD
+  - cardinality: from XSD (minOccurs..maxOccurs)
+  - definition: from MDR PDF (if missing, null)
+
+Output:
+- Return ONLY valid JSON (array of objects).
+- Do not include any explanation or commentary.
+"""
+
+# ----------------------------
+# Load File Contents
+# ----------------------------
+def read_file(file_path):
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
+xsd_text = read_file("pacs008.xsd")
+
+# For PDF MDR, you probably want to extract text first
+import pdfplumber
+mdr_text = ""
+with pdfplumber.open("pacs008_mdr.pdf") as pdf:
+    for page in pdf.pages:
+        mdr_text += page.extract_text() + "\n"
+
+# ----------------------------
+# Send to LLM
+# ----------------------------
+input_text = f"{prompt_template}\n\n---\nXSD:\n{xsd_text}\n\n---\nMDR:\n{mdr_text}\n"
+
+response = llm(input_text, max_new_tokens=4096, temperature=0.0)[0]["generated_text"]
+
+# ----------------------------
+# Extract JSON
+# ----------------------------
+# Some models may echo the prompt → try to locate JSON block
+try:
+    start = response.find("[")
+    end = response.rfind("]") + 1
+    json_str = response[start:end]
+    data = json.loads(json_str)
+except Exception as e:
+    print("⚠️ JSON parsing failed, raw output:")
+    print(response)
+    raise e
+
+# ----------------------------
+# Save JSON
+# ----------------------------
+with open("pacs008_metadata.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=4, ensure_ascii=False)
+
+print("✅ JSON saved to pacs008_metadata.json")
